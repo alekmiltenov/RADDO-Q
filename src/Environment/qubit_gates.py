@@ -1,5 +1,5 @@
 import numpy as np
-
+from qubit import Qubit
 
 rho = np.zeros((2,2), dtype=np.complex128)
 np.set_printoptions(precision=3, suppress=True)
@@ -48,21 +48,27 @@ def q_Rz(theta, rho):
     return rho
 
 
-print("|0>")
-rho = q_init(rho)
-print(rho)
-print("\n")
+def main():
+    rho = np.zeros((2,2), dtype=np.complex128)
+    print("|0>")
+    rho = q_init(rho)
+    print(rho)
+    print("\n")
 
-print("|1>")
-rho = q_Rx(np.pi,rho)
-print(rho)
-print("\n")
+    print("|1>")
+    rho = q_Rx(np.pi,rho)
+    print(rho)
+    print("\n")
 
-print("|0>")
-rho = q_Ry(np.pi,rho)
-print(rho)
-print("\n")
+    print("|0>")
+    rho = q_Ry(np.pi,rho)
+    print(rho)
+    print("\n")
 
-print("|?>")
-rho = q_Rz(np.pi,rho)
-print(rho)
+    print("|0>")
+    rho = q_Rz(np.pi,rho)
+    print(rho)
+    print("\n")
+
+if __name__ == "__main__":
+    main()
