@@ -24,8 +24,8 @@
   - **γ_up = 1 - e^(-dt / T_up)**
 - Results:
   - |**Excitation Graph at 1 Kelvin**||**Excitation Graph at 77 Kelvin**|
-  -<img src="Excitation_graph_1k.png" width="400px">
-  
-  -|**Excitation Graph at 77 Kelvin**|
-  -<img src="Excitation_graph_77k.png" width="380px">
+  - <img src="Excitation_graph_1k.png" width="400px">
+
+  - |**Excitation Graph at 77 Kelvin**|
+  - <img src="Excitation_graph_77k.png" width="380px">
 - As seen in the graphs, excitation behaves realistically.
