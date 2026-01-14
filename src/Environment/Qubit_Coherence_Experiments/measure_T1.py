@@ -112,10 +112,10 @@ def plot_jump_distribution(times, rate_true, rate_pred, title):
 
 def main():
     T1_0Kelvin = 100.0
-    temperature_K = 1.0
+    temperature_K = 77.0
     omega_01 = 2.0 * np.pi * 2.87e9
 
-    dt = 1.0
+    dt = 0.01
     t_max = 1000.0
     N = 3000
 

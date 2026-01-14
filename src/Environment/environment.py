@@ -216,9 +216,11 @@ class General_DD_Env(gym.Env):
             reward = ((-np.log(1.0 - f)) - 1)
 
             if fidelity >= 0.60:
-                reward += 1.5
-            if fidelity >= 0.70:
                 reward += 2.5
+            if fidelity >= 0.65:
+                reward += 5.5
+            if fidelity >= 0.70:
+                reward += 12.5
             if fidelity >= 0.85:
                 reward += 2.5
             if fidelity >= 0.925:
