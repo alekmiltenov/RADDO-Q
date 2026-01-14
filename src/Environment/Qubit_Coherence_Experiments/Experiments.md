@@ -8,9 +8,11 @@
 - In our discrete-time simulation step `dt`, the relaxation probability is:
   - **γ_down = 1 - e^(-dt / T1)**
 - Results:
-  - |**Relaxation Graph at 1 Kelvin**|                     |**Relaxation Graph at 77 Kelvin**|
+  - |**Relaxation Graph at 1 Kelvin**|
+  - <img src="Relaxation_graph_1k.png" width="400px">
 
-  - <img src="Relaxation_graph_1k.png" width="400px"> <img src="Relaxation_graph_77k.png" width="387px">
+  - |**Relaxation Graph at 77 Kelvin**|
+  - <img src="Relaxation_graph_77k.png" width="387px">
 
 
 - As seen in the graphs, the relaxation behaviour matches the expected exponential decay.
@@ -21,7 +23,9 @@
 - In our discrete-time simulation step `dt`, the excitation probability is:
   - **γ_up = 1 - e^(-dt / T_up)**
 - Results:
-  - |**Excitation Graph at 1 Kelvin**|                    |**Excitation Graph at 77 Kelvin**|
-
-  -<img src="Excitation_graph_1k.png" width="400px"> <img src="Excitation_graph_77k.png" width="380px">
+  - |**Excitation Graph at 1 Kelvin**||**Excitation Graph at 77 Kelvin**|
+  -<img src="Excitation_graph_1k.png" width="400px">
+  
+  -|**Excitation Graph at 77 Kelvin**|
+  -<img src="Excitation_graph_77k.png" width="380px">
 - As seen in the graphs, excitation behaves realistically.
