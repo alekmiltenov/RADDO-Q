@@ -29,7 +29,7 @@
     - dt is the simulation time step
     - T1 is the measured/predicted energy-relaxation time constant
 
-- Simulation behaves realistically as seen in **[Simulation charts here](/qubit_coherence_experiments/Experiments.md)**
+- Simulation behaves realistically as seen in **[Simulation charts here](Qubit_Coherence_Experiments/Experiments.md)**
 
 
 ### T1 Energy Excitation Time
@@ -46,4 +46,4 @@
     - γ_up = (p_th / (1 - p_th)) * γ_down
     where `p_th` is the thermal excited-state population (between 0 and 1).
 
-- Simulation behaves realistically as seen in **[docs/qubit_coherence_experiments/Experiments.md](docs/qubit_coherence_experiments/Experiments.md)**
+- Simulation behaves realistically as seen in **[Simulation charts here](Qubit_Coherence_Experiments/Experiments.md)**
