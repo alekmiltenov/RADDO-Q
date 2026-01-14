@@ -1,6 +1,6 @@
 # Qubit Properties
 
-- Contains terminologies you can see the meaning of in **[docs/glossary.md](docs/glossary.md)**
+- Contains terminologies you can see the meaning of in **[docs/terminology.md](docs/terminology.md)**
 
 ### T1 at 0 Kelvin
 - A unique behavioural qubit property that can only be measured or estimated
