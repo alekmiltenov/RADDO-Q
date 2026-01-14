@@ -8,7 +8,9 @@
 - In our discrete-time simulation step `dt`, the relaxation probability is:
   - **γ_down = 1 - e^(-dt / T1)**
 - Results:
+  - <img src="Relaxation_graph_1k.png" width="80%">
   - ![T1 Relaxation Graph at 1 Kelvin](Relaxation_graph_1k.png) ![T1 Excitation Graph at 77 Kelvin](Relaxation_graph_77k.png)
+
 
 - As seen in the graphs, the relaxation behaviour matches the expected exponential decay.
 
