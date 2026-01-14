@@ -1,7 +1,6 @@
 import numpy as np
 import random
 
-
 class Qubit:
     # Qubit Properties
     rho: np.ndarray
@@ -57,14 +56,7 @@ class Qubit:
 
     # Probability of relaxation
     @staticmethod
-    def relaxation_probability(
-        rho: np.ndarray,
-        gamma1_0Kelvin: float,
-        T1_0Kelvin: float,
-        omega_01: float,
-        temperature_K: float,
-        dt: float
-    ) -> float:
+    def relaxation_probability(rho: np.ndarray, gamma1_0Kelvin: float, T1_0Kelvin: float, omega_01: float, temperature_K: float, dt: float) -> float:
         if dt <= 0.0:
             return 0.0
 
@@ -82,14 +74,7 @@ class Qubit:
 
     # Probability of excitation
     @staticmethod
-    def excitation_probability(
-        rho: np.ndarray,
-        gamma1_0Kelvin: float,
-        T1_0Kelvin: float,
-        omega_01: float,
-        temperature_K: float,
-        dt: float
-    ) -> float:
+    def excitation_probability(rho: np.ndarray, gamma1_0Kelvin: float, T1_0Kelvin: float, omega_01: float, temperature_K: float, dt: float) -> float:
         if dt <= 0.0:
             return 0.0
 
@@ -107,15 +92,7 @@ class Qubit:
 
     # Decide whether to apply relaxation
     @staticmethod
-    def relaxation_step(
-        rho: np.ndarray,
-        gamma1_0Kelvin: float,
-        T1_0Kelvin: float,
-        omega_01: float,
-        temperature_K: float,
-        dt: float,
-        rng: np.random.Generator
-    ) -> tuple[np.ndarray, bool, float]:
+    def relaxation_step(rho: np.ndarray, gamma1_0Kelvin: float, T1_0Kelvin: float, omega_01: float, temperature_K: float, dt: float, rng: np.random.Generator) -> tuple[np.ndarray, bool, float]:
         p_jump = Qubit.relaxation_probability(rho, gamma1_0Kelvin, T1_0Kelvin, omega_01, temperature_K, dt)
 
         if p_jump > 0.0 and float(rng.random()) < p_jump:
@@ -128,15 +105,7 @@ class Qubit:
 
     # Decide whether to apply excitation
     @staticmethod
-    def excitation_step(
-        rho: np.ndarray,
-        gamma1_0Kelvin: float,
-        T1_0Kelvin: float,
-        omega_01: float,
-        temperature_K: float,
-        dt: float,
-        rng: np.random.Generator
-    ) -> tuple[np.ndarray, bool, float]:
+    def excitation_step(rho: np.ndarray, gamma1_0Kelvin: float, T1_0Kelvin: float, omega_01: float, temperature_K: float, dt: float, rng: np.random.Generator) -> tuple[np.ndarray, bool, float]:
         p_jump = Qubit.excitation_probability(rho, gamma1_0Kelvin, T1_0Kelvin, omega_01, temperature_K, dt)
 
         if p_jump > 0.0 and float(rng.random()) < p_jump:
@@ -149,15 +118,7 @@ class Qubit:
 
     # Generalized Amplitude Damping
     @staticmethod
-    def GAD_step(
-        rho: np.ndarray,
-        gamma1_0Kelvin: float,
-        T1_0Kelvin: float,
-        omega_01: float,
-        temperature_K: float,
-        dt: float,
-        rng: np.random.Generator
-    ) -> tuple[np.ndarray, str, float, float]:
+    def GAD_step(rho: np.ndarray, gamma1_0Kelvin: float, T1_0Kelvin: float, omega_01: float, temperature_K: float, dt: float, rng: np.random.Generator) -> tuple[np.ndarray, str, float, float]:
         if dt <= 0.0:
             return rho, "none", 0.0, 0.0
 
@@ -278,11 +239,7 @@ class Qubit:
     
     # T phi phase damp
     @staticmethod
-    def phase_damp_step(
-        rho: np.ndarray,
-        T_phi: float,
-        dt: float
-    ) -> np.ndarray:
+    def phase_damp_step(rho: np.ndarray, T_phi: float, dt: float) -> np.ndarray:
         if T_phi <= 0.0 or dt <= 0.0:
             return rho
 
