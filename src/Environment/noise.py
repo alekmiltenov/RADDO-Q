@@ -1,90 +1,99 @@
 import numpy as np
-from qubit import Qubit
-from qubit_gates import q_Rx
+
+class Noise:
+    dt                  : float                            # Time step in simulation
+    rng                 : np.random.Generator
+    tau_c               : float
+    ou_delta_omega_rms  : float
+    ou_delta_omega      : float                            # Last calculated ou_delta_omega
+    white_gamma_phi     : float
+
+    rtn_lambda          : float                            # Switching rate
+    rtn_nu              : float                            # Amplitude (switch power)
+    rtn_sign            : int                              # Last sign of rtn switch ( + or - )
+
+    # Base values
+    OU_TAU_C_BASE           = 1e-2
+    OU_DELTA_OMEGA_RMS_BASE = 4.8e5
+    RTN_SWITCHING_RATE_BASE = 500.0
+    RTN_NU_BASE             = 1.6e5
+    WHITE_GAMMA_PHI_BASE    = 2.0
+
+    # Avoid Unnecessary Compute helpers
+    ou_decay_factor      : float                        # exp(-dt/tau_c)
+    ou_random_term_scale : float                        # ou_delta_omega_rms * sqrt(1 - decay_factor**2 )
+    rtn_P_switch         : float                        # 0.5 * (1 - exp(- 2.0 * rtn_lambda * dt))
 
 
-def quasi_static_detuning_step(
-    rho: np.ndarray,
-    dt: float,
-    detuning_sigma_hz: float,
-    rng: np.random.Generator,
-    detuning_rad_s: float | None = None
-) -> tuple[np.ndarray, float]:
-    if dt <= 0.0:
-        return rho, 0.0 if detuning_rad_s is None else float(detuning_rad_s)
+    def __init__(self, dt: float = 1e-5):
+        self.dt = dt
+        self.rng = np.random.default_rng()
 
-    if detuning_sigma_hz <= 0.0:
-        detuning = 0.0 if detuning_rad_s is None else float(detuning_rad_s)
-        return rho, detuning
-
-    if detuning_rad_s is None:
-        detuning_sigma_rad_s = float(2.0 * np.pi * detuning_sigma_hz)
-        detuning = float(rng.normal(0.0, detuning_sigma_rad_s))
-    else:
-        detuning = float(detuning_rad_s)
-
-    phi = detuning * dt
-
-    e_neg = np.exp(-1j * (phi / 2.0))
-    e_pos = np.exp(+1j * (phi / 2.0))
-
-    U = np.array([[e_neg, 0.0],
-                  [0.0,  e_pos]], dtype=np.complex128)
-
-    rho_next = U @ rho @ U.conj().T
-    return rho_next, detuning
+        self.tau_c = self.OU_TAU_C_BASE * self.rng.uniform(0.2, 5.0)
+        self.ou_delta_omega_rms = self.OU_DELTA_OMEGA_RMS_BASE * self.rng.uniform(0.5, 2.0)
+        self.rtn_lambda = self.RTN_SWITCHING_RATE_BASE * self.rng.uniform(0.2, 2)
+        self.rtn_nu = self.RTN_NU_BASE * self.rng.uniform(0.5, 2)
+        self.ou_delta_omega = self.ou_delta_omega_rms * self.rng.standard_normal()
+        self.white_gamma_phi = self.WHITE_GAMMA_PHI_BASE * self.rng.uniform(0.3, 3)
+        self.rtn_sign = 1 if self.rng.random() < 0.5 else -1
+        self.ou_decay_factor = np.exp(-self.dt / self.tau_c)
+        self.ou_random_term_scale = self.ou_delta_omega_rms * np.sqrt(1.0 - (self.ou_decay_factor **2))
+        self.rtn_P_switch = 0.5 * (1.0 - np.exp(-2.0 * self.rtn_lambda * self.dt))
 
 
-def bloch_from_rho(rho: np.ndarray):
-    x = 2.0 * np.real(rho[0, 1])
-    y = -2.0 * np.imag(rho[0, 1])
-    z = np.real(rho[0, 0] - rho[1, 1])
-    return float(x), float(y), float(z)
+
+    @staticmethod
+    def Ornstein_Uhlenbeck(dt: float,
+                           ou_delta_omega: float,
+                           ou_decay_factor: float,
+                           ou_random_term_scale: float,
+                           rng: np.random.Generator
+                           ) -> tuple[float, float]:
+
+        phi = ou_delta_omega * dt
+
+        xi = rng.standard_normal()
+        delta_omega_next = (ou_delta_omega * ou_decay_factor + ou_random_term_scale * xi)
+        # print('ou', delta_omega_next)
+
+        return phi, float(delta_omega_next)
+        
+    @staticmethod
+    def Random_Telegraph_Noise(dt: float,
+                               rtn_P_switch: float,
+                               rtn_nu: float,
+                               rtn_sign: int,
+                               rng: np.random.Generator
+                               )-> tuple[float, int]:
+        
+        if rng.random() < rtn_P_switch:
+            rtn_sign = -rtn_sign
+        # print('rtn', rtn_sign * rtn_nu)
+        phi = rtn_sign * rtn_nu * dt
+        return phi, int(rtn_sign)
 
 
-def log_step(rho: np.ndarray, t: float, detuning_rad_s: float):
-    tr = float(np.real(np.trace(rho)))
-    herm_err = float(np.linalg.norm(rho - rho.conj().T))
-    x, y, z = bloch_from_rho(rho)
+    @staticmethod
+    def White_Noise(dt: float,
+                    white_gamma_phi: float,
+                    rng: np.random.Generator
+                    ) -> float :
+        
+        xi = rng.standard_normal()
+        phi = np.sqrt(2.0 * dt * white_gamma_phi) * xi
+        return phi
+    
 
-    print(f"t={t:6.3f}  Δ={detuning_rad_s:+.6f} rad/s  tr={tr:.6f}  herm_err={herm_err:.2e}  bloch=({x:+.4f},{y:+.4f},{z:+.4f})")
-    print(f"rho01={rho[0,1].real:+.6f}{rho[0,1].imag:+.6f}j   |rho01|={abs(rho[0,1]):.6f}")
-    print(rho)
-    print("-" * 88)
+    def apply_noise(self, rho: np.ndarray) -> np.ndarray:
+        
+        phi_ou, self.ou_delta_omega = self.Ornstein_Uhlenbeck(self.dt, self.ou_delta_omega, self.ou_decay_factor, self.ou_random_term_scale, self.rng)
+        phi_rtn, self.rtn_sign = self.Random_Telegraph_Noise(self.dt, self.rtn_P_switch, self.rtn_nu, self.rtn_sign, self.rng)
+        phi_white = self.White_Noise(self.dt, self.white_gamma_phi, self.rng)
 
-
-def main():
-    np.set_printoptions(precision=4, suppress=True)
-    rng = np.random.default_rng(7)
-
-    dt = 0.01
-    t_max = 0.20
-    steps = int(round(t_max / dt))
-
-    detuning_sigma_hz = 50.0
-
-    rho = np.array([[0.5 + 0.0j, 0.5 + 0.0j],
-                    [0.5 + 0.0j, 0.5 + 0.0j]], dtype=np.complex128)
-
-    detuning = 1.0
-    rho = q_Rx(np.pi/6, rho)
-    print("=== Quasi-static detuning sanity check ===")
-    print(f"dt={dt}, t_max={t_max}, detuning_sigma={detuning_sigma_hz} Hz")
-    print("Expected: rho00/rho11 constant, |rho01| constant, (x,y) rotates, trace~1.\n")
-
-    for n in range(steps + 1):
-        t = n * dt
-        detuning_val = 0.0 if detuning is None else float(detuning)
-        log_step(rho, t, detuning_val)
-
-        rho, detuning = quasi_static_detuning_step(
-            rho,
-            dt,
-            detuning_sigma_hz,
-            rng,
-            detuning
-        )
+        phi = phi_ou + phi_rtn + phi_white
+        U = np.array([[np.exp(-1j * phi / 2.0), 0.0],
+                      [0.0, np.exp(+1j * phi / 2.0)]], dtype=np.complex128)
+        rho = U @ rho @ U.conj().T
 
 
-if __name__ == "__main__":
-    main()
+        return rho
