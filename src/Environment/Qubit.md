@@ -12,9 +12,6 @@
 - In a discrete simulation step `dt`, the relaxation probability can be written as:
   - p_down = 1 - e^(-γ1_0K * dt)
 
-### Gamma Phi
-- Also a unique behavioural qubit property that represents **pure dephasing** or the qubit's ability to slowly lose its phase (x and y coordinate on the Bloch sphere) even in a perfect environment
-
 ### Omega01
 - Another qubit property linked to the effect of temperature on the qubit excitation time
 
@@ -40,10 +37,6 @@
     where:
     - dt is the simulation time step
     - T_up is the measured/predicted excitation time constant (often related to temperature)
-  
-  - If you want to tie it to T1 directly (optional), a common way is to set:
-    - γ_down = 1 - e^(-dt / T1)
-    - γ_up = (p_th / (1 - p_th)) * γ_down
-    where `p_th` is the thermal excited-state population (between 0 and 1).
+
 
 - Simulation behaves realistically as seen in **[Simulation charts here](Qubit_Coherence_Experiments/Experiments.md#t1-energy-excitation-0--1)**

@@ -129,7 +129,6 @@ class Qubit:
         
         self.rho = self.apply_GAD_nojump(self.rho, self.base_relaxation_probability , self.base_excitation_probability)
         return -1
-        #####! could pass in rho to skip self...
 
 
 

@@ -17,7 +17,7 @@ class Noise:
 
     # Base values
     OU_TAU_C_BASE           = 1e-2
-    OU_DELTA_OMEGA_RMS_BASE = 4.8e5
+    OU_DELTA_OMEGA_RMS_BASE = 2.e4
     RTN_SWITCHING_RATE_BASE = 500.0
     RTN_NU_BASE             = 1.6e5
     QS_DELTA_OMEGA_BASE     = 4e5
