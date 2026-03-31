@@ -1,28 +1,32 @@
 import numpy as np
 
 class Noise:
-    dt                  : float                            # Time step in simulation
+    dt                  : float                             # Time step in simulation
     rng                 : np.random.Generator
     tau_c               : float
     ou_delta_omega_rms  : float
-    ou_delta_omega      : float                            # Last calculated ou_delta_omega
-    white_gamma_phi     : float
+    ou_delta_omega      : float                             # Last calculated ou_delta_omega
 
-    rtn_lambda          : float                            # Switching rate
-    rtn_nu              : float                            # Amplitude (switch power)
-    rtn_sign            : int                              # Last sign of rtn switch ( + or - )
+    qs_delta_omega      : float                             # Quasi-static detuning rad/s
+
+    white_gamma_phi     : float                             # White noise strangth
+
+    rtn_lambda          : float                             # Switching rate
+    rtn_nu              : float                             # Amplitude (switch power)
+    rtn_sign            : int                               # Last sign of rtn switch ( + or - )
 
     # Base values
     OU_TAU_C_BASE           = 1e-2
     OU_DELTA_OMEGA_RMS_BASE = 4.8e5
     RTN_SWITCHING_RATE_BASE = 500.0
     RTN_NU_BASE             = 1.6e5
+    QS_DELTA_OMEGA_BASE     = 4e5
     WHITE_GAMMA_PHI_BASE    = 2.0
 
     # Avoid Unnecessary Compute helpers
-    ou_decay_factor      : float                        # exp(-dt/tau_c)
-    ou_random_term_scale : float                        # ou_delta_omega_rms * sqrt(1 - decay_factor**2 )
-    rtn_P_switch         : float                        # 0.5 * (1 - exp(- 2.0 * rtn_lambda * dt))
+    ou_decay_factor      : float                            # exp(-dt/tau_c)
+    ou_random_term_scale : float                            # ou_delta_omega_rms * sqrt(1 - decay_factor**2 )
+    rtn_P_switch         : float                            # 0.5 * (1 - exp(- 2.0 * rtn_lambda * dt))
 
 
     def __init__(self, dt: float = 1e-5):
@@ -34,6 +38,7 @@ class Noise:
         self.rtn_lambda = self.RTN_SWITCHING_RATE_BASE * self.rng.uniform(0.2, 2)
         self.rtn_nu = self.RTN_NU_BASE * self.rng.uniform(0.5, 2)
         self.ou_delta_omega = self.ou_delta_omega_rms * self.rng.standard_normal()
+        self.qs_delta_omega = self.QS_DELTA_OMEGA_BASE * self.rng.standard_normal()
         self.white_gamma_phi = self.WHITE_GAMMA_PHI_BASE * self.rng.uniform(0.3, 3)
         self.rtn_sign = 1 if self.rng.random() < 0.5 else -1
         self.ou_decay_factor = np.exp(-self.dt / self.tau_c)
@@ -54,7 +59,6 @@ class Noise:
 
         xi = rng.standard_normal()
         delta_omega_next = (ou_delta_omega * ou_decay_factor + ou_random_term_scale * xi)
-        # print('ou', delta_omega_next)
 
         return phi, float(delta_omega_next)
         
@@ -68,9 +72,17 @@ class Noise:
         
         if rng.random() < rtn_P_switch:
             rtn_sign = -rtn_sign
-        # print('rtn', rtn_sign * rtn_nu)
+
         phi = rtn_sign * rtn_nu * dt
         return phi, int(rtn_sign)
+    
+    @staticmethod
+    def Quasi_Static_Detuning(dt: float,
+                              qs_delta_omega: float
+                              ) -> float:
+    
+        phi = qs_delta_omega * dt
+        return float(phi)
 
 
     @staticmethod
@@ -88,12 +100,14 @@ class Noise:
         
         phi_ou, self.ou_delta_omega = self.Ornstein_Uhlenbeck(self.dt, self.ou_delta_omega, self.ou_decay_factor, self.ou_random_term_scale, self.rng)
         phi_rtn, self.rtn_sign = self.Random_Telegraph_Noise(self.dt, self.rtn_P_switch, self.rtn_nu, self.rtn_sign, self.rng)
+        phi_qs = self.Quasi_Static_Detuning(self.dt, self.qs_delta_omega)
         phi_white = self.White_Noise(self.dt, self.white_gamma_phi, self.rng)
 
-        phi = phi_ou + phi_rtn + phi_white
+        phi = phi_ou + phi_rtn + phi_qs + phi_white
+
         U = np.array([[np.exp(-1j * phi / 2.0), 0.0],
                       [0.0, np.exp(+1j * phi / 2.0)]], dtype=np.complex128)
+        
         rho = U @ rho @ U.conj().T
-
 
         return rho
