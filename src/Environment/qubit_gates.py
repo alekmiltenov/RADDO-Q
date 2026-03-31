@@ -1,7 +1,5 @@
 import numpy as np
-from qubit import Qubit
 
-rho = np.zeros((2,2), dtype=np.complex128)
 np.set_printoptions(precision=3, suppress=True)
 
 
@@ -10,13 +8,14 @@ def apply_Unitary(rho: np.ndarray , U: np.ndarray) -> np.ndarray:
     return rho
 
 
-def q_init(rho):
+def q_init():
     rho = np.array([[1,0],
                     [0,0]], dtype=np.complex128)
     return rho
 
-def q_excite(rho):
-    rho = q_Rx(np.pi, rho)
+def q_excite():
+    rho = np.array([[0,0],
+                    [0,1]], dtype=np.complex128)
     return rho
 
 
