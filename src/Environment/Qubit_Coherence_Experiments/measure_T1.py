@@ -1,171 +1,99 @@
-import os 
-os.system("")
-
-import sys
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import numpy as np
-import random
 import matplotlib.pyplot as plt
-
 from qubit import Qubit
-from qubit_gates import q_init, q_excite
+from qubit_gates import q_init, q_Rx
+
+NUM_RUNS = 100
+TEMPERATURE_K = 77.0
+DT = 1e-4
+MAX_TIME = 30.0
+
+first_relaxation_times = []
+
+for run in range(NUM_RUNS):
+    rho0 = q_init()
+    rho0 = q_Rx(np.pi, rho0)
+
+    qubit = Qubit(rho=rho0, dt=DT, temperature_Kelvin=TEMPERATURE_K)
+
+    elapsed_time = 0.0
+    gad_result = -1
+
+    while elapsed_time < MAX_TIME:
+        gad_result = qubit.GAD()
+        elapsed_time += DT
+
+        if gad_result == 0:
+            first_relaxation_times.append(elapsed_time)
+            break
+
+    if gad_result == -1:
+        print(f"Run {run}: no jump within {MAX_TIME}s")
+
+    print(f"Run {run}/{NUM_RUNS} done...")
 
 
-def nth_bose(omega_01: float, temperature_K: float) -> float:
-    if omega_01 <= 0.0 or temperature_K <= 0.0:
-        return 0.0
-    hbar = 1.054571817e-34
-    kB = 1.380649e-23
-    x = (hbar * omega_01) / (kB * temperature_K)
-    x = min(max(float(x), 1e-12), 700.0)
-    return float(1.0 / (np.exp(x) - 1.0))
+# Stats
+relaxation_times = np.array(first_relaxation_times)
+print(f"\n--- Results at {TEMPERATURE_K}K ---")
+print(f"Relaxation jumps:  {len(relaxation_times)}, mean = {np.mean(relaxation_times):.4f}s")
+print(f"Paper T1 at 77K:  ~ 10s")
 
 
-def extract_T1_from_data(times):
-    return np.mean(times)
+# Plot
+fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
+paper_T1_seconds = 10.0
+time_axis = np.linspace(0, MAX_TIME, 1000)
+paper_survival_curve = np.exp(-time_axis / paper_T1_seconds)
 
-def predict_T1(T1, measurement_relative_error=0.1):
-    eps = measurement_relative_error * (2 * random.random() - 1)
-    return T1 * (1 + eps)
+sorted_relaxation_times = np.sort(relaxation_times)
+simulated_survival_curve = 1.0 - np.arange(1, len(sorted_relaxation_times) + 1) / len(sorted_relaxation_times)
 
+axes[1].plot(
+    sorted_relaxation_times,
+    simulated_survival_curve,
+    color="steelblue",
+    linewidth=2,
+    label="Relaxation simulation"
+)
+axes[1].plot(
+    time_axis,
+    paper_survival_curve,
+    color="orange",
+    linestyle="--",
+    linewidth=2,
+    label=f"Theory T1 ~ {paper_T1_seconds:.0f}s"
+)
+axes[1].set_xlabel("Time (s)")
+axes[1].set_ylabel("P(no relaxation yet)")
+axes[1].set_title(f"Survival Curve | T = {TEMPERATURE_K}K")
+axes[1].legend()
+axes[1].grid(alpha=0.3)
 
-def measure_relaxation_experiment(T1_0Kelvin, omega_01, temperature_K, N=3000, dt=1.0, t_max=1000.0):
-    times = []
-    rng = np.random.default_rng()
-    steps = int(round(t_max / dt))
-    gamma1_0Kelvin = 0.0
+axes[0].hist(relaxation_times, bins=20, color="steelblue", edgecolor="black", alpha=0.8)
+axes[0].axvline(
+    np.mean(relaxation_times),
+    color="red",
+    linestyle="--",
+    linewidth=2,
+    label=f"Mean = {np.mean(relaxation_times):.2f}s"
+)
+axes[0].axvline(
+    paper_T1_seconds,
+    color="orange",
+    linestyle="--",
+    linewidth=2,
+    label=f"Paper T1 ~ {paper_T1_seconds:.0f}s"
+)
+axes[0].set_xlabel("First relaxation time (s)")
+axes[0].set_ylabel("Count")
+axes[0].set_title(f"T1 Relaxation | T = {TEMPERATURE_K}K, N = {NUM_RUNS}")
+axes[0].legend()
+axes[0].grid(alpha=0.3)
 
-    for _ in range(N):
-        rho = np.zeros((2, 2), dtype=np.complex128)
-        rho = q_init(rho)
-        rho = q_excite(rho)
-
-        for n in range(steps + 1):
-            elapsed_time = n * dt
-            rho, jumped, _ = Qubit.relaxation_step(rho, gamma1_0Kelvin, T1_0Kelvin, omega_01, temperature_K, dt, rng)
-            if jumped:
-                times.append(elapsed_time + dt)
-                break
-
-    data = np.array(times)
-    extracted_T1 = extract_T1_from_data(data)
-    return data, extracted_T1
-
-
-def measure_excitation_experiment(T1_0Kelvin, omega_01, temperature_K, N=3000, dt=1.0, t_max=1000.0):
-    times = []
-    rng = np.random.default_rng()
-    steps = int(round(t_max / dt))
-    gamma1_0Kelvin = 0.0
-
-    for _ in range(N):
-        rho = np.zeros((2, 2), dtype=np.complex128)
-        rho = q_init(rho)
-
-        for n in range(steps + 1):
-            elapsed_time = n * dt
-            rho, jumped, _ = Qubit.excitation_step(rho, gamma1_0Kelvin, T1_0Kelvin, omega_01, temperature_K, dt, rng)
-            if jumped:
-                times.append(elapsed_time + dt)
-                break
-
-    data = np.array(times)
-    extracted_T1 = extract_T1_from_data(data)
-    return data, extracted_T1
-
-
-def plot_jump_distribution(times, rate_true, rate_pred, title):
-    plt.figure()
-
-    plt.hist(
-        times,
-        bins=50,
-        density=True,
-        alpha=0.6,
-        label="Simulated jump histogram"
-    )
-
-    time_axis = np.linspace(0, max(times), 500)
-
-    plt.plot(
-        time_axis,
-        rate_true * np.exp(-rate_true * time_axis),
-        "r",
-        label="True"
-    )
-
-    plt.plot(
-        time_axis,
-        rate_pred * np.exp(-rate_pred * time_axis),
-        "k--",
-        label="Predicted"
-    )
-
-    plt.xlabel("Jump time")
-    plt.ylabel("Probability density")
-    plt.title(title)
-    plt.legend()
-    plt.show()
-
-
-def main():
-    T1_0Kelvin = 100.0
-    temperature_K = 77.0
-    omega_01 = 2.0 * np.pi * 2.87e9
-
-    dt = 0.01
-    t_max = 1000.0
-    N = 3000
-
-    measurement_relative_error = 0.1
-    T1_0Kelvin_pred = predict_T1(T1_0Kelvin, measurement_relative_error=measurement_relative_error)
-
-    n_th = nth_bose(omega_01, temperature_K)
-    gamma0_true = 0.0 if T1_0Kelvin <= 0.0 else 1.0 / T1_0Kelvin
-    gamma0_pred = 0.0 if T1_0Kelvin_pred <= 0.0 else 1.0 / T1_0Kelvin_pred
-
-    rate_relax_true = gamma0_true * (1.0 + n_th)
-    rate_relax_pred = gamma0_pred * (1.0 + n_th)
-
-    rate_excite_true = gamma0_true * n_th
-    rate_excite_pred = gamma0_pred * n_th
-
-    relaxation_times, relaxation_T1_hat = measure_relaxation_experiment(T1_0Kelvin, omega_01, temperature_K, N=N, dt=dt, t_max=t_max)
-
-    print(f"[RELAXATION]")
-    print(f"T1_0K true         : {T1_0Kelvin}")
-    print(f"Temperature (K)              : {temperature_K}")
-    print(f"n_th               : {n_th:.3e}")
-    print(f"rate_down (true)   : {rate_relax_true:.3e}  1/s")
-    print(f"T1_down (true)     : {(1.0/rate_relax_true) if rate_relax_true>0 else np.inf:.3f} s")
-    print(f"Measured mean time : {relaxation_T1_hat:.3f} s")
-
-    plot_jump_distribution(
-        relaxation_times,
-        rate_relax_true,
-        rate_relax_pred,
-        "Relaxation jump-time distribution (|1> -> |0|)"
-    )
-
-    excitation_times, excitation_T1_hat = measure_excitation_experiment(T1_0Kelvin, omega_01, temperature_K, N=N, dt=dt, t_max=t_max)
-
-    print(f"\n[EXCITATION]")
-    print(f"T1_0K true         : {T1_0Kelvin}")
-    print(f"Temperature (K)              : {temperature_K}")
-    print(f"n_th               : {n_th:.3e}")
-    print(f"rate_up (true)     : {rate_excite_true:.3e}  1/s")
-    print(f"T1_up (true)       : {(1.0/rate_excite_true) if rate_excite_true>0 else np.inf:.3f} s")
-    print(f"Measured mean time : {excitation_T1_hat:.3f} s")
-
-    plot_jump_distribution(
-        excitation_times,
-        rate_excite_true,
-        rate_excite_pred,
-        "Excitation jump-time distribution (|0> -> |1|)"
-    )
-
-
-if __name__ == "__main__":
-    main()
+plt.tight_layout()
+plt.show()
