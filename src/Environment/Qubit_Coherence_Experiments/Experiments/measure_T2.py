@@ -4,6 +4,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")
 import numpy as np
 import matplotlib.pyplot as plt
 
+from joblib import Parallel, delayed
+
 from qubit import Qubit
 from qubit_gates import q_Rx, q_init
 from noise import Noise
@@ -13,7 +15,7 @@ DT            = 1e-5                                            # dt should be <
 TEMPERATURE_K = 77.0                                            # Temperature in kelvin
 N_REPEATS     = 1000                                            # Repeat many times for smoother curve
 
-tau_values = np.linspace(0, 2e-3, 1000)                       # total Hahn echo time values
+tau_values = np.linspace(0, 1e-3, 1000)                       # total Hahn echo time values
 tau_steps = np.unique(np.round(tau_values / DT).astype(int))    # filter unique step numbers
 tau_steps = tau_steps[tau_steps % 2 == 0]                       # keep only even step counts
 TAUS = tau_steps * DT                                           # final filtered tau values
@@ -93,7 +95,9 @@ def extract_T2(
 
 
 # Get populations for each tau
-echo_population_values = [hahn_echo_signal(tau) for tau in TAUS]
+echo_population_values = Parallel(n_jobs=-2)(
+    delayed(hahn_echo_signal)(tau) for tau in TAUS
+)
 
 # Extract T2 as a number
 T2 = extract_T2(TAUS, echo_population_values)

@@ -15,13 +15,22 @@ class Noise:
     rtn_nu              : float                             # Amplitude (switch power)
     rtn_sign            : int                               # Last sign of rtn switch ( + or - )
 
+    one_over_f_lambdas    : np.ndarray                      # Switching rates for RTN bank
+    one_over_f_nus        : np.ndarray                      # Amplitudes for RTN bank
+    one_over_f_signs      : np.ndarray                      # Sign states for RTN bank
+    one_over_f_P_switches : np.ndarray                      # Per-step switch probabilities for RTN bank
+
     # Base values
     OU_TAU_C_BASE           = 1e-2
-    OU_DELTA_OMEGA_RMS_BASE = 2.e4
+    OU_DELTA_OMEGA_RMS_BASE = 1.5e3
     RTN_SWITCHING_RATE_BASE = 500.0
-    RTN_NU_BASE             = 1.6e5
-    QS_DELTA_OMEGA_BASE     = 4e5
-    WHITE_GAMMA_PHI_BASE    = 2.0
+    RTN_NU_BASE             = 2e3
+    QS_DELTA_OMEGA_BASE     = 4e4
+    WHITE_GAMMA_PHI_BASE    = 1.0
+    ONE_OVER_F_NUM_FLUCTUATORS = 8
+    ONE_OVER_F_LAMBDA_MIN      = 1.0
+    ONE_OVER_F_LAMBDA_MAX      = 1e5
+    ONE_OVER_F_TOTAL_NU_BASE   = 6e4
 
     # Avoid Unnecessary Compute helpers
     ou_decay_factor      : float                            # exp(-dt/tau_c)
@@ -40,6 +49,27 @@ class Noise:
         self.ou_delta_omega = self.ou_delta_omega_rms * self.rng.standard_normal()
         self.qs_delta_omega = self.QS_DELTA_OMEGA_BASE * self.rng.standard_normal()
         self.white_gamma_phi = self.WHITE_GAMMA_PHI_BASE * self.rng.uniform(0.3, 3)
+        self.one_over_f_lambdas = np.logspace(
+            np.log10(self.ONE_OVER_F_LAMBDA_MIN),
+            np.log10(self.ONE_OVER_F_LAMBDA_MAX),
+            self.ONE_OVER_F_NUM_FLUCTUATORS
+        )
+
+        self.one_over_f_nus = np.full(
+            self.ONE_OVER_F_NUM_FLUCTUATORS,
+            self.ONE_OVER_F_TOTAL_NU_BASE / np.sqrt(self.ONE_OVER_F_NUM_FLUCTUATORS)
+        )
+
+        self.one_over_f_signs = np.where(
+            self.rng.random(self.ONE_OVER_F_NUM_FLUCTUATORS) < 0.5,
+            1,
+            -1
+        ).astype(int)
+
+        self.one_over_f_P_switches = 0.5 * (
+            1.0 - np.exp(-2.0 * self.one_over_f_lambdas * self.dt)
+        )
+
         self.rtn_sign = 1 if self.rng.random() < 0.5 else -1
         self.ou_decay_factor = np.exp(-self.dt / self.tau_c)
         self.ou_random_term_scale = self.ou_delta_omega_rms * np.sqrt(1.0 - (self.ou_decay_factor **2))
@@ -95,6 +125,24 @@ class Noise:
         phi = np.sqrt(2.0 * dt * white_gamma_phi) * xi
         return phi
     
+    @staticmethod
+    def One_Over_F_Pink_Noise(dt: float,
+                            one_over_f_P_switches: np.ndarray,
+                            one_over_f_nus: np.ndarray,
+                            one_over_f_signs: np.ndarray,
+                            rng: np.random.Generator
+                            ) -> tuple[float, np.ndarray]:
+
+        random_values = rng.random(len(one_over_f_signs))
+        switch_mask = random_values < one_over_f_P_switches
+
+        updated_signs = one_over_f_signs.copy()
+        updated_signs[switch_mask] = -updated_signs[switch_mask]
+
+        phi = np.sum(updated_signs * one_over_f_nus) * dt
+
+        return float(phi), updated_signs
+    
 
     def apply_noise(self, rho: np.ndarray) -> np.ndarray:
         
@@ -102,8 +150,15 @@ class Noise:
         phi_rtn, self.rtn_sign = self.Random_Telegraph_Noise(self.dt, self.rtn_P_switch, self.rtn_nu, self.rtn_sign, self.rng)
         phi_qs = self.Quasi_Static_Detuning(self.dt, self.qs_delta_omega)
         phi_white = self.White_Noise(self.dt, self.white_gamma_phi, self.rng)
+        phi_one_over_f, self.one_over_f_signs = self.One_Over_F_Pink_Noise(
+            self.dt,
+            self.one_over_f_P_switches,
+            self.one_over_f_nus,
+            self.one_over_f_signs,
+            self.rng
+        )
 
-        phi = phi_ou + phi_rtn + phi_qs + phi_white
+        phi = phi_ou + phi_rtn + phi_qs + phi_white + phi_one_over_f
 
         U = np.array([[np.exp(-1j * phi / 2.0), 0.0],
                       [0.0, np.exp(+1j * phi / 2.0)]], dtype=np.complex128)
