@@ -4,8 +4,14 @@ class Noise:
     dt                  : float                             # Time step in simulation
     rng                 : np.random.Generator
     tau_c               : float
-    ou_delta_omega_rms  : float
-    ou_delta_omega      : float                             # Last calculated ou_delta_omega
+
+    ou_slow_tau_c               : float
+    ou_slow_delta_omega_rms     : float
+    ou_slow_delta_omega         : float
+
+    ou_fast_tau_c               : float
+    ou_fast_delta_omega_rms     : float
+    ou_fast_delta_omega         : float
 
     qs_delta_omega      : float                             # Quasi-static detuning rad/s
 
@@ -21,34 +27,41 @@ class Noise:
     one_over_f_P_switches : np.ndarray                      # Per-step switch probabilities for RTN bank
 
     # Base values
-    OU_TAU_C_BASE               = 1e-2
-    OU_DELTA_OMEGA_RMS_BASE     = 1.5e3
-    RTN_SWITCHING_RATE_BASE     = 500.0
-    RTN_NU_BASE                 = 2e3
-    QS_DELTA_OMEGA_BASE         = 4e4
-    WHITE_GAMMA_PHI_BASE        = 10.0
-    ONE_OVER_F_NUM_FLUCTUATORS  = 8
-    ONE_OVER_F_LAMBDA_MIN       = 1.0
-    ONE_OVER_F_LAMBDA_MAX       = 1e3
-    ONE_OVER_F_TOTAL_NU_BASE    = 5e3
+    OU_SLOW_TAU_C_BASE               = 1e-2
+    OU_SLOW_DELTA_OMEGA_RMS_BASE     = 8e2
+    OU_FAST_TAU_C_BASE               = 1e-4
+    OU_FAST_DELTA_OMEGA_RMS_BASE     = 5e2
+    RTN_SWITCHING_RATE_BASE          = 500.0
+    RTN_NU_BASE                      = 2e3
+    QS_DELTA_OMEGA_BASE              = 4e4
+    WHITE_GAMMA_PHI_BASE             = 1.0
+    ONE_OVER_F_NUM_FLUCTUATORS       = 8
+    ONE_OVER_F_LAMBDA_MIN            = 1e-1
+    ONE_OVER_F_LAMBDA_MAX            = 1e2
+    ONE_OVER_F_TOTAL_NU_BASE         = 8e2
 
     # Avoid Unnecessary Compute helpers
-    ou_decay_factor      : float                            # exp(-dt/tau_c)
-    ou_random_term_scale : float                            # ou_delta_omega_rms * sqrt(1 - decay_factor**2 )
-    rtn_P_switch         : float                            # 0.5 * (1 - exp(- 2.0 * rtn_lambda * dt))
+    ou_slow_decay_factor      : float
+    ou_slow_random_term_scale : float
+    ou_fast_decay_factor      : float
+    ou_fast_random_term_scale : float
+    rtn_P_switch              : float                       # 0.5 * (1 - exp(- 2.0 * rtn_lambda * dt))
 
 
     def __init__(self, dt: float = 1e-5):
         self.dt = dt
         self.rng = np.random.default_rng()
 
-        self.tau_c = self.OU_TAU_C_BASE * self.rng.uniform(0.2, 5.0)
-        self.ou_delta_omega_rms = self.OU_DELTA_OMEGA_RMS_BASE * self.rng.uniform(0.5, 2.0)
-        self.rtn_lambda = self.RTN_SWITCHING_RATE_BASE * self.rng.uniform(0.2, 2)
-        self.rtn_nu = self.RTN_NU_BASE * self.rng.uniform(0.5, 2)
-        self.ou_delta_omega = self.ou_delta_omega_rms * self.rng.standard_normal()
-        self.qs_delta_omega = self.QS_DELTA_OMEGA_BASE * self.rng.standard_normal()
-        self.white_gamma_phi = self.WHITE_GAMMA_PHI_BASE * self.rng.uniform(0.3, 3)
+        self.ou_slow_tau_c           = self.OU_SLOW_TAU_C_BASE * self.rng.uniform(0.2, 5.0)
+        self.ou_slow_delta_omega_rms = self.OU_SLOW_DELTA_OMEGA_RMS_BASE * self.rng.uniform(0.5, 2.0)
+        self.ou_slow_delta_omega     = self.ou_slow_delta_omega_rms * self.rng.standard_normal()
+        self.ou_fast_tau_c           = self.OU_FAST_TAU_C_BASE * self.rng.uniform(0.2, 5.0)
+        self.ou_fast_delta_omega_rms = self.OU_FAST_DELTA_OMEGA_RMS_BASE * self.rng.uniform(0.5, 2.0)
+        self.ou_fast_delta_omega     = self.ou_fast_delta_omega_rms * self.rng.standard_normal()
+        self.rtn_lambda              = self.RTN_SWITCHING_RATE_BASE * self.rng.uniform(0.2, 2)
+        self.rtn_nu                  = self.RTN_NU_BASE * self.rng.uniform(0.5, 2)
+        self.qs_delta_omega          = self.QS_DELTA_OMEGA_BASE * self.rng.standard_normal()
+        self.white_gamma_phi         = self.WHITE_GAMMA_PHI_BASE * self.rng.uniform(0.3, 3)
         self.one_over_f_lambdas = np.logspace(
             np.log10(self.ONE_OVER_F_LAMBDA_MIN),
             np.log10(self.ONE_OVER_F_LAMBDA_MAX),
@@ -70,11 +83,12 @@ class Noise:
             1.0 - np.exp(-2.0 * self.one_over_f_lambdas * self.dt)
         )
 
-        self.rtn_sign = 1 if self.rng.random() < 0.5 else -1
-        self.ou_decay_factor = np.exp(-self.dt / self.tau_c)
-        self.ou_random_term_scale = self.ou_delta_omega_rms * np.sqrt(1.0 - (self.ou_decay_factor **2))
-        self.rtn_P_switch = 0.5 * (1.0 - np.exp(-2.0 * self.rtn_lambda * self.dt))
-
+        self.rtn_sign                 = 1 if self.rng.random() < 0.5 else -1
+        self.ou_slow_decay_factor      = np.exp(-self.dt / self.ou_slow_tau_c)
+        self.ou_slow_random_term_scale = self.ou_slow_delta_omega_rms * np.sqrt(1.0 - self.ou_slow_decay_factor**2)
+        self.ou_fast_decay_factor      = np.exp(-self.dt / self.ou_fast_tau_c)
+        self.ou_fast_random_term_scale = self.ou_fast_delta_omega_rms * np.sqrt(1.0 - self.ou_fast_decay_factor**2)
+        self.rtn_P_switch              = 0.5 * (1.0 - np.exp(-2.0 * self.rtn_lambda * self.dt))
 
 
     @staticmethod
@@ -135,18 +149,17 @@ class Noise:
 
         random_values = rng.random(len(one_over_f_signs))
         switch_mask = random_values < one_over_f_P_switches
+        one_over_f_signs[switch_mask] *= -1
 
-        updated_signs = one_over_f_signs.copy()
-        updated_signs[switch_mask] = -updated_signs[switch_mask]
+        phi = np.sum(one_over_f_signs * one_over_f_nus) * dt
 
-        phi = np.sum(updated_signs * one_over_f_nus) * dt
-
-        return float(phi), updated_signs
+        return float(phi), one_over_f_signs
     
 
     def apply_noise(self, rho: np.ndarray) -> np.ndarray:
         
-        phi_ou, self.ou_delta_omega = self.Ornstein_Uhlenbeck(self.dt, self.ou_delta_omega, self.ou_decay_factor, self.ou_random_term_scale, self.rng)
+        phi_ou_slow, self.ou_slow_delta_omega = self.Ornstein_Uhlenbeck(self.dt, self.ou_slow_delta_omega, self.ou_slow_decay_factor, self.ou_slow_random_term_scale, self.rng)
+        phi_ou_fast, self.ou_fast_delta_omega = self.Ornstein_Uhlenbeck(self.dt, self.ou_fast_delta_omega, self.ou_fast_decay_factor, self.ou_fast_random_term_scale, self.rng)
         phi_rtn, self.rtn_sign = self.Random_Telegraph_Noise(self.dt, self.rtn_P_switch, self.rtn_nu, self.rtn_sign, self.rng)
         phi_qs = self.Quasi_Static_Detuning(self.dt, self.qs_delta_omega)
         phi_white = self.White_Noise(self.dt, self.white_gamma_phi, self.rng)
@@ -158,7 +171,7 @@ class Noise:
             self.rng
         )
 
-        phi = phi_ou + phi_rtn + phi_qs + phi_white + phi_one_over_f
+        phi = phi_ou_slow + phi_ou_fast + phi_rtn + phi_qs + phi_white + phi_one_over_f
 
         U = np.array([[np.exp(-1j * phi / 2.0), 0.0],
                       [0.0, np.exp(+1j * phi / 2.0)]], dtype=np.complex128)
