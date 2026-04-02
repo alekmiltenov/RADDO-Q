@@ -21,16 +21,16 @@ class Noise:
     one_over_f_P_switches : np.ndarray                      # Per-step switch probabilities for RTN bank
 
     # Base values
-    OU_TAU_C_BASE           = 1e-2
-    OU_DELTA_OMEGA_RMS_BASE = 1.5e3
-    RTN_SWITCHING_RATE_BASE = 500.0
-    RTN_NU_BASE             = 2e3
-    QS_DELTA_OMEGA_BASE     = 4e4
-    WHITE_GAMMA_PHI_BASE    = 1.0
-    ONE_OVER_F_NUM_FLUCTUATORS = 8
-    ONE_OVER_F_LAMBDA_MIN      = 1.0
-    ONE_OVER_F_LAMBDA_MAX      = 1e5
-    ONE_OVER_F_TOTAL_NU_BASE   = 6e4
+    OU_TAU_C_BASE               = 1e-2
+    OU_DELTA_OMEGA_RMS_BASE     = 1.5e3
+    RTN_SWITCHING_RATE_BASE     = 500.0
+    RTN_NU_BASE                 = 2e3
+    QS_DELTA_OMEGA_BASE         = 4e4
+    WHITE_GAMMA_PHI_BASE        = 10.0
+    ONE_OVER_F_NUM_FLUCTUATORS  = 8
+    ONE_OVER_F_LAMBDA_MIN       = 1.0
+    ONE_OVER_F_LAMBDA_MAX       = 1e3
+    ONE_OVER_F_TOTAL_NU_BASE    = 5e3
 
     # Avoid Unnecessary Compute helpers
     ou_decay_factor      : float                            # exp(-dt/tau_c)
