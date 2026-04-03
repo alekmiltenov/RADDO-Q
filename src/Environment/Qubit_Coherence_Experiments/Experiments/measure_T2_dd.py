@@ -4,124 +4,290 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")
 import numpy as np
 import matplotlib.pyplot as plt
 from joblib import Parallel, delayed
+from scipy.optimize import curve_fit
 
 from qubit import Qubit
-from qubit_gates import q_Rx, q_Ry, q_init
+from qubit_gates import q_Rx, q_Ry
 from noise import Noise
 
-# --- DD Sequence Selection ---
+
 PI   = np.pi
-CPMG = [lambda rho: q_Ry(PI, rho)]
-XY4  = [lambda rho: q_Rx(PI, rho),
-        lambda rho: q_Ry(PI, rho),
-        lambda rho: q_Rx(PI, rho),
-        lambda rho: q_Ry(PI, rho)]
+CPMG = ['Y']
+XY4  = ['X', 'Y', 'X', 'Y']
+XY8  = ['X', 'Y', 'X', 'Y', 'Y', 'X', 'Y', 'X']
+KDD  = ['X', 'Y', 'X', 'Y', 'X']
 
-XY8  = [lambda rho: q_Rx(PI, rho),
-        lambda rho: q_Ry(PI, rho),
-        lambda rho: q_Rx(PI, rho),
-        lambda rho: q_Ry(PI, rho),
-        lambda rho: q_Ry(PI, rho),
-        lambda rho: q_Rx(PI, rho),
-        lambda rho: q_Ry(PI, rho),
-        lambda rho: q_Rx(PI, rho)]
+DD_SEQUENCE = CPMG
 
-KDD = [lambda rho: q_Rx(PI, rho),
-       lambda rho: q_Ry(PI/2, rho),
-       lambda rho: q_Rx(PI, rho),
-       lambda rho: q_Ry(PI/2, rho),
-       lambda rho: q_Rx(PI, rho)]
+# Config
+DT            = 1e-6
+TEMPERATURE_K = 77.0
+N_REPEATS     = 20
+INCLUDE_T1    = True
 
-DD_SEQUENCE = CPMG                                              # <-- swap here
 
-# --- Config ---
-DT                  = 1e-6
-TEMPERATURE_K       = 77.0
-N_REPEATS           = 20
+N_PULSES = 16384
+
+TAUS = np.linspace(5e-6, 75e-6, 20)
+
+
+PULSE_SIGMA_AMP   = 1e-3
+PULSE_SIGMA_TIME  = 1e-3
+PULSE_SIGMA_PHASE = 1e-3
+
 COHERENCE_THRESHOLD = np.exp(-1)
 
-TAUS         = np.logspace(-6, -3, 10)
-N_PULSES_MAX = 32768
 
 
-def single_repeat(tau: float, n_pulses: int, half_steps: int) -> float:
-    qubit = Qubit(rho=q_init(), dt=DT, temperature_Kelvin=TEMPERATURE_K)
+def q_equatorial() -> np.ndarray:
+    return np.array([[0.5, 0.5],
+                     [0.5, 0.5]], dtype=np.complex128)
+
+
+def single_shot(n_pulses: int, half_steps: int) -> complex:
+    """Run one complete DD sequence; return rho01 (off-diagonal element)."""
+    qubit = Qubit(rho=q_equatorial(), dt=DT, temperature_Kelvin=TEMPERATURE_K)
     noise = Noise(dt=DT)
 
-    qubit.rho = q_Rx(PI / 2, qubit.rho)
+    noise.tech_static_detuning = 0.0
+    noise.tech_sigma_amp_frac  = PULSE_SIGMA_AMP
+    noise.tech_sigma_time_frac = PULSE_SIGMA_TIME
+    noise.tech_sigma_phase_rad = PULSE_SIGMA_PHASE
 
     for i in range(n_pulses):
+ 
         for _ in range(half_steps):
-            qubit.GAD()
+            if INCLUDE_T1:
+                qubit.GAD()
             qubit.rho = noise.apply_noise(qubit.rho)
 
-        qubit.rho = DD_SEQUENCE[i % len(DD_SEQUENCE)](qubit.rho)
+        # pi-pulse
+        axis = DD_SEQUENCE[i % len(DD_SEQUENCE)]
+        if axis == 'X':
+            qubit.rho = q_Rx(PI, qubit.rho, noise)
+        else:
+            qubit.rho = q_Ry(PI, qubit.rho, noise)
 
         for _ in range(half_steps):
-            qubit.GAD()
+            if INCLUDE_T1:
+                qubit.GAD()
             qubit.rho = noise.apply_noise(qubit.rho)
 
-    qubit.rho = q_Rx(PI / 2, qubit.rho)
-    return float(np.real(qubit.rho[1, 1]))
+    return complex(qubit.rho[0, 1])
 
 
-def run_dd(tau: float, n_pulses: int) -> float:
-    half_steps = max(1, int(round(tau / 2 / DT)))
-    population_samples = Parallel(n_jobs=-1)(
-        delayed(single_repeat)(tau, n_pulses, half_steps) for _ in range(N_REPEATS)
+def coherence_at_tau(tau: float, n_pulses: int) -> tuple[float, float]:
+
+    half_steps = max(1, int(round(tau / 2.0 / DT)))
+    actual_tau = 2 * half_steps * DT
+
+    rho01_values = np.array(
+        [single_shot(n_pulses, half_steps) for _ in range(N_REPEATS)],
+        dtype=np.complex128
     )
-    return float(np.mean(population_samples))
+
+    coherence  = float(min(2.0 * abs(np.mean(rho01_values)), 1.0))
+    total_time = n_pulses * actual_tau
+
+    return total_time, coherence
 
 
-def normalized_contrast(signal: float, baseline: float = 0.5, initial_contrast: float = 0.5) -> float:
-    return (signal - baseline) / initial_contrast
+
+def stretched_exponential(t: np.ndarray, A: float, T2: float, p: float) -> np.ndarray:
+    return A * np.exp(-(t / T2) ** p)
 
 
-# --- Run ---
-fig, ax = plt.subplots(figsize=(10, 5))
-best_T2_dd = 0.0
-best_tau   = None
-cycle_len  = len(DD_SEQUENCE)
+def threshold_crossing(total_times: np.ndarray, coherences: np.ndarray) -> tuple[float, str]:
 
-for tau in TAUS:
-    n_pulses_list         = []
-    contrast_list         = []
-    total_time_at_failure = None
+    envelope = np.minimum.accumulate(coherences)
+    cross = np.where(envelope <= COHERENCE_THRESHOLD)[0]
 
-    n = cycle_len
-    while n <= N_PULSES_MAX:
-        signal   = run_dd(tau, n)
-        contrast = normalized_contrast(signal)
+    if len(cross) == 0:
+        return np.inf, "above_window"
+    i = cross[0]
+    if i == 0:
+        return float(total_times[0]), "below_window"
 
-        n_pulses_list.append(n)
-        contrast_list.append(contrast)
+    t0, t1 = total_times[i - 1], total_times[i]
+    c0, c1 = envelope[i - 1], envelope[i]
+    if c1 == c0:
+        return float(t1), "bracketed"
 
-        print(f"  tau={tau*1e6:.1f}us  N={n:6d}  total_time={n * tau * 1e3:.2f}ms  contrast={contrast:.3f}")
+    T2 = t0 + (COHERENCE_THRESHOLD - c0) * (t1 - t0) / (c1 - c0)
+    return float(T2), "bracketed"
 
-        if contrast <= COHERENCE_THRESHOLD:
-            total_time_at_failure = n * tau
-            break
 
-        n = n * 2
-        n = (n // cycle_len) * cycle_len
+def fit_decay(total_times: np.ndarray, coherences: np.ndarray) -> tuple[float, float, float, np.ndarray, str]:
 
-    total_times_ms = [n * tau * 1e3 for n in n_pulses_list]
-    label = f"τ={tau*1e6:.1f}μs  T2_DD={total_time_at_failure*1e3:.1f}ms" if total_time_at_failure else f"τ={tau*1e6:.1f}μs  T2_DD>max"
+    if len(total_times) < 5:
+        return np.nan, np.nan, np.nan, np.array([]), "too few points"
 
-    ax.plot(total_times_ms, contrast_list, marker='o', linewidth=1.5, label=label)
+    T2_guess, _ = threshold_crossing(total_times, coherences)
+    if not np.isfinite(T2_guess):
+        T2_guess = float(total_times[-1]) * 0.5
 
-    if total_time_at_failure and total_time_at_failure > best_T2_dd:
-        best_T2_dd = total_time_at_failure
-        best_tau   = tau
+    A0 = float(coherences[0]) if coherences[0] > 0 else 1.0
 
-print(f"\nBest T2_DD = {best_T2_dd*1e3:.2f}ms at tau = {best_tau*1e6:.2f}us")
+    try:
+        popt, _ = curve_fit(
+            stretched_exponential,
+            total_times,
+            coherences,
+            p0=[A0, T2_guess, 1.0],
+            bounds=([0.0, total_times[0] * 0.1, 0.25],
+                    [1.5, total_times[-1] * 10.0, 5.0]),
+            maxfev=20000,
+        )
+        A_fit, T2_fit, p_fit = popt
+        fitted_curve = stretched_exponential(total_times, *popt)
+        return float(T2_fit), float(A_fit), float(p_fit), fitted_curve, "ok"
 
-ax.axhline(y=COHERENCE_THRESHOLD, color='k', linestyle='--', alpha=0.4, label='1/e threshold')
-ax.set_xlabel("Total evolution time (ms)")
-ax.set_ylabel("Normalized contrast")
-ax.set_title(f"DD T2 decay 77K - {'CPMG' if DD_SEQUENCE is CPMG else 'XY4'}")
-ax.set_ylim(0.0, 1.1)
-ax.grid(True, alpha=0.3)
-ax.legend(fontsize=7)
-plt.tight_layout()
-plt.show()
+    except Exception as e:
+        return np.nan, np.nan, np.nan, np.array([]), f"failed: {e}"
+
+
+
+def measure_T2_dd(n_pulses: int, tau_values: np.ndarray):
+    """
+    Sweep tau values for a fixed number of pi-pulses.
+    x-axis: total_time = n_pulses * tau
+    y-axis: coherence = 2|mean(rho01)|   (mean taken over repeats before abs)
+    """
+    results = Parallel(n_jobs=-1)(
+        delayed(coherence_at_tau)(tau, n_pulses) for tau in tau_values
+    )
+
+    total_times = np.array([r[0] for r in results])
+    coherences  = np.array([r[1] for r in results])
+
+    order = np.argsort(total_times)
+    total_times = total_times[order]
+    coherences  = coherences[order]
+
+    envelope = np.minimum.accumulate(coherences)
+
+    T2_threshold, threshold_status      = threshold_crossing(total_times, coherences)
+    T2_fit, A_fit, p_fit, fitted_curve, fit_status = fit_decay(total_times, coherences)
+
+    return (
+        total_times,
+        coherences,
+        envelope,
+        T2_threshold,
+        threshold_status,
+        T2_fit,
+        A_fit,
+        p_fit,
+        fitted_curve,
+        fit_status,
+    )
+
+
+
+if __name__ == "__main__":
+    seq_name = {id(CPMG): "CPMG", id(XY4): "XY4",
+                id(XY8): "XY8",  id(KDD): "KDD"}.get(id(DD_SEQUENCE), "DD")
+
+    print(f"\n--- T2 DD  |  {seq_name}  |  N = {N_PULSES} pulses  |  {TEMPERATURE_K} K ---")
+
+    (
+        total_times,
+        coherences,
+        envelope,
+        T2_threshold,
+        threshold_status,
+        T2_fit,
+        A_fit,
+        p_fit,
+        fitted_curve,
+        fit_status,
+    ) = measure_T2_dd(n_pulses=N_PULSES, tau_values=TAUS)
+
+    taus_from_total = total_times / N_PULSES
+
+    for tau, t, c, e in zip(taus_from_total, total_times, coherences, envelope):
+        print(
+            f"  tau={tau*1e6:7.1f} µs   "
+            f"total={t*1e3:7.3f} ms   "
+            f"coherence={c:.4f}   "
+            f"envelope={e:.4f}"
+        )
+
+    print("\n--- Results ---")
+
+    if threshold_status == "bracketed":
+        print(f"  Threshold T2_DD  = {T2_threshold*1e3:.3f} ms  (1/e of monotone envelope)")
+    elif threshold_status == "below_window":
+        print(f"  Threshold T2_DD  < {total_times[0]*1e3:.3f} ms  (decay faster than first point)")
+    else:
+        print(f"  Threshold T2_DD  > {total_times[-1]*1e3:.3f} ms  (no 1/e crossing in window)")
+
+    if np.isfinite(T2_fit):
+        print(f"  Fit      T2_DD  = {T2_fit*1e3:.3f} ms   (stretched-exp, p={p_fit:.3f}, A={A_fit:.3f})")
+        print(f"  Fit status: {fit_status}")
+    else:
+        print(f"  Fit      T2_DD  = unavailable  ({fit_status})")
+
+    # --- Plot ---
+    fig, ax = plt.subplots(figsize=(8, 5))
+    t_ms = total_times * 1e3
+
+    ax.plot(t_ms, coherences, 'o-', linewidth=1.5, markersize=4, label="Coherence  2|⟨ρ₀₁⟩|")
+    ax.plot(t_ms, envelope,   '--',  linewidth=1.5, label="Monotone envelope")
+
+    if len(fitted_curve) == len(total_times):
+        ax.plot(t_ms, fitted_curve, linewidth=2.0, label="Stretched-exp fit")
+
+    ax.axhline(COHERENCE_THRESHOLD, color='k', linestyle=':', alpha=0.5, label="1/e")
+
+    ax.set_xlabel("Total evolution time  n·τ  (ms)")
+    ax.set_ylabel("Coherence  2|ρ₀₁|")
+    ax.set_title(f"DD coherence decay  {seq_name}  N={N_PULSES}  @{TEMPERATURE_K} K")
+    ax.set_ylim(0.0, 1.05)
+    ax.grid(True, alpha=0.3)
+    ax.legend()
+
+    lines = []
+    if threshold_status == "bracketed":
+        lines.append(f"Threshold T2 = {T2_threshold*1e3:.2f} ms")
+    elif threshold_status == "below_window":
+        lines.append(f"Threshold T2 < {total_times[0]*1e3:.2f} ms")
+    else:
+        lines.append(f"Threshold T2 > {total_times[-1]*1e3:.2f} ms")
+
+    if np.isfinite(T2_fit):
+        lines.append(f"Fit T2 = {T2_fit*1e3:.2f} ms")
+        lines.append(f"Fit p  = {p_fit:.3f}")
+    else:
+        lines.append("Fit T2 = unavailable")
+
+    ax.text(0.98, 0.95, "\n".join(lines),
+            transform=ax.transAxes, ha="right", va="top",
+            bbox=dict(boxstyle="round", facecolor="white", alpha=0.85))
+
+    plt.tight_layout()
+    plt.show()
+
+    print("\n" + "="*55)
+    print("  FINAL ANSWER")
+    print("="*55)
+
+    best_idx = int(np.argmax(coherences))
+    best_tau_us = total_times[best_idx] / N_PULSES * 1e6
+    best_coherence = coherences[best_idx]
+    print(f"  Best measured coherence point:")
+    print(f"    tau = {best_tau_us:.1f} us  ->  coherence = {best_coherence:.3f}")
+    print(f"    (coherence 1.0 = perfectly quantum, 0.0 = fully destroyed)")
+    print()
+
+    if np.isfinite(T2_fit) and 0.28 < p_fit < 4.9:
+        print(f"  T2_DD (qubit coherence time with DD) = {T2_fit*1e3:.0f} ms")
+        print(f"    This is how long the qubit stays quantum under the")
+        print(f"    {seq_name} pulse sequence with N={N_PULSES} pulses.")
+        print(f"    At this time the qubit has lost ~63% of its coherence.")
+    elif np.isfinite(T2_threshold):
+        print(f"  T2_DD (from threshold, fit unreliable) = {T2_threshold*1e3:.0f} ms")
+    else:
+        print("  T2_DD could not be extracted -- check tau range or increase N_REPEATS.")
+
+    print("="*55)
