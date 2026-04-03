@@ -130,37 +130,3 @@ class Qubit:
         self.rho = self.apply_GAD_nojump(self.rho, self.base_relaxation_probability , self.base_excitation_probability)
         return -1
 
-
-
-def main():
-    from qubit_gates import q_Ry
-    rho = np.array([[0.0, 0.0],
-                     [0.0, 1.0]], dtype=np.complex128)
-    rho = q_Ry(np.pi/2, rho)
-
-    qubit = Qubit(rho=rho, dt=1e-5, temperature_Kelvin=77.0)
-
-    print("gamma_down:", qubit.gamma_down, "T1:", 1/qubit.gamma_down)
-    print("gamma_up:", qubit.gamma_up, "ratio up/down:", qubit.gamma_up/qubit.gamma_down)
-    print("p_down:", qubit.base_relaxation_probability)
-    print("p_up:", qubit.base_excitation_probability)
-    print("rho11 start:", float(np.real(qubit.rho[1,1])))
-    print("rho00 start:", float(np.real(qubit.rho[0,0])))
-
-    t = 0.0
-    last_print = 0.0
-    print_interval = 0.001
-
-    while t < 24.0:
-        qubit.GAD()
-        t += qubit.dt
-
-        if t - last_print >= print_interval:
-            rho11 = float(np.real(qubit.rho[1, 1]))
-            print(f"t = {t:.4f}s | rho11 = {rho11:.6f} | rho00 = {1-rho11:.6f}")
-            last_print = t
-
-
-if __name__ == "__main__":
-    main()
-    ###!!! avoid self accessing

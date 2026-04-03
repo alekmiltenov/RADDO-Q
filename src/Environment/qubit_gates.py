@@ -19,23 +19,15 @@ def q_excite():
     return rho
 
 
-def q_Rx(theta, rho):
-    cos = np.cos(theta / 2.0)
-    sin = np.sin(theta / 2.0)
-    U = np.array([[cos , -1j * sin],
-                  [-1j * sin , cos]], dtype=np.complex128)
-    
-    rho = apply_Unitary(rho, U)
+def q_Rx(theta, rho, noise):
+    rho = noise.apply_imperfect_pulse(rho, "X", theta)
     return rho
 
-def q_Ry(theta, rho):
-    cos = np.cos(theta / 2.0)
-    sin = np.sin(theta / 2.0)
-    U = np.array([[cos , -sin],
-                  [sin , cos]], dtype=np.complex128)
-    
-    rho = apply_Unitary(rho, U)
+
+def q_Ry(theta, rho, noise):
+    rho = noise.apply_imperfect_pulse(rho, "Y", theta)
     return rho
+
 
 def q_Rz(theta, rho):
     e_j     = np.exp(+1j * (theta / 2.0))
@@ -45,29 +37,3 @@ def q_Rz(theta, rho):
     
     rho = apply_Unitary(rho, U)
     return rho
-
-
-def main():
-    rho = np.zeros((2,2), dtype=np.complex128)
-    print("|0>")
-    rho = q_init(rho)
-    print(rho)
-    print("\n")
-
-    print("|1>")
-    rho = q_Rx(np.pi,rho)
-    print(rho)
-    print("\n")
-
-    print("|0>")
-    rho = q_Ry(np.pi,rho)
-    print(rho)
-    print("\n")
-
-    print("|0>")
-    rho = q_Rz(np.pi,rho)
-    print(rho)
-    print("\n")
-
-if __name__ == "__main__":
-    main()

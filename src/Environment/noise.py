@@ -1,30 +1,35 @@
 import numpy as np
 
 class Noise:
-    dt                  : float                             # Time step in simulation
-    rng                 : np.random.Generator
-    tau_c               : float
+    dt                              : float                             # Time step in simulation
+    rng                             : np.random.Generator
 
-    ou_slow_tau_c               : float
-    ou_slow_delta_omega_rms     : float
-    ou_slow_delta_omega         : float
+    ou_slow_tau_c                   : float
+    ou_slow_delta_omega_rms         : float
+    ou_slow_delta_omega             : float
 
-    ou_fast_tau_c               : float
-    ou_fast_delta_omega_rms     : float
-    ou_fast_delta_omega         : float
+    ou_fast_tau_c                   : float
+    ou_fast_delta_omega_rms         : float
+    ou_fast_delta_omega             : float
 
-    qs_delta_omega      : float                             # Quasi-static detuning rad/s
+    qs_delta_omega                  : float                             # Quasi-static detuning rad/s
 
-    white_gamma_phi     : float                             # White noise strangth
+    white_gamma_phi                 : float                             # White noise strangth
 
-    rtn_lambda          : float                             # Switching rate
-    rtn_nu              : float                             # Amplitude (switch power)
-    rtn_sign            : int                               # Last sign of rtn switch ( + or - )
+    rtn_lambda                      : float                             # Switching rate
+    rtn_nu                          : float                             # Amplitude (switch power)
+    rtn_sign                        : int                               # Last sign of rtn switch ( + or - )
 
-    one_over_f_lambdas    : np.ndarray                      # Switching rates for RTN bank
-    one_over_f_nus        : np.ndarray                      # Amplitudes for RTN bank
-    one_over_f_signs      : np.ndarray                      # Sign states for RTN bank
-    one_over_f_P_switches : np.ndarray                      # Per-step switch probabilities for RTN bank
+    one_over_f_lambdas              : np.ndarray                        # Switching rates for RTN bank
+    one_over_f_nus                  : np.ndarray                        # Amplitudes for RTN bank
+    one_over_f_signs                : np.ndarray                        # Sign states for RTN bank
+    one_over_f_P_switches           : np.ndarray                        # Per-step switch probabilities for RTN bank
+
+    tech_t_pi                       : float                             # Nominal pulse duration
+    tech_static_detuning            : float                             # Static detuning for one run
+    tech_sigma_amp_frac             : float                             # Per-pulse fractional amplitude error std
+    tech_sigma_time_frac            : float                             # Per-pulse fractional pulse duration jitter std
+    tech_sigma_phase_rad            : float                             # Per-pulse phase error std
 
     # Base values
     OU_SLOW_TAU_C_BASE               = 1e-2
@@ -40,12 +45,26 @@ class Noise:
     ONE_OVER_F_LAMBDA_MAX            = 1e2
     ONE_OVER_F_TOTAL_NU_BASE         = 8e2
 
+    TECH_T_PI_BASE                   = 100e-9
+    TECH_STATIC_DETUNING_SIGMA_BASE  = 2.0 * np.pi * 2.0e5
+    TECH_AMP_FRAC_SIGMA_BASE         = 2e-3
+    TECH_TIME_FRAC_SIGMA_BASE        = 2e-3
+    TECH_PHASE_SIGMA_BASE            = 1e-3
+
+    PAULI_X = np.array([[0.0, 1.0],
+                        [1.0, 0.0]], dtype=np.complex128)
+    PAULI_Y = np.array([[0.0, -1j],
+                        [1j, 0.0]], dtype=np.complex128)
+    PAULI_Z = np.array([[1.0, 0.0],
+                        [0.0, -1.0]], dtype=np.complex128)
+    IDENTITY = np.eye(2, dtype=np.complex128)
+
     # Avoid Unnecessary Compute helpers
     ou_slow_decay_factor      : float
     ou_slow_random_term_scale : float
     ou_fast_decay_factor      : float
     ou_fast_random_term_scale : float
-    rtn_P_switch              : float                       # 0.5 * (1 - exp(- 2.0 * rtn_lambda * dt))
+    rtn_P_switch              : float                                   # 0.5 * (1 - exp(- 2.0 * rtn_lambda * dt))
 
 
     def __init__(self, dt: float = 1e-5):
@@ -83,7 +102,13 @@ class Noise:
             1.0 - np.exp(-2.0 * self.one_over_f_lambdas * self.dt)
         )
 
-        self.rtn_sign                 = 1 if self.rng.random() < 0.5 else -1
+        self.tech_t_pi            = self.TECH_T_PI_BASE
+        self.tech_static_detuning = self.rng.normal(0.0, self.TECH_STATIC_DETUNING_SIGMA_BASE)
+        self.tech_sigma_amp_frac  = self.TECH_AMP_FRAC_SIGMA_BASE
+        self.tech_sigma_time_frac = self.TECH_TIME_FRAC_SIGMA_BASE
+        self.tech_sigma_phase_rad = self.TECH_PHASE_SIGMA_BASE
+
+        self.rtn_sign                  = 1 if self.rng.random() < 0.5 else -1
         self.ou_slow_decay_factor      = np.exp(-self.dt / self.ou_slow_tau_c)
         self.ou_slow_random_term_scale = self.ou_slow_delta_omega_rms * np.sqrt(1.0 - self.ou_slow_decay_factor**2)
         self.ou_fast_decay_factor      = np.exp(-self.dt / self.ou_fast_tau_c)
@@ -154,6 +179,50 @@ class Noise:
         phi = np.sum(one_over_f_signs * one_over_f_nus) * dt
 
         return float(phi), one_over_f_signs
+    
+
+    def apply_imperfect_pulse(self,
+                          rho: np.ndarray,
+                          axis: str,
+                          angle: float = np.pi
+                          ) -> np.ndarray:
+
+        amp_frac_error  = self.rng.normal(0.0, self.tech_sigma_amp_frac)
+        time_frac_error = self.rng.normal(0.0, self.tech_sigma_time_frac)
+        phase_error     = self.rng.normal(0.0, self.tech_sigma_phase_rad)
+
+        pulse_time    = self.tech_t_pi * (angle / np.pi) * (1.0 + time_frac_error)
+        pulse_time    = max(pulse_time, 1e-15)
+        omega_drive   = (np.pi / self.tech_t_pi) * (1.0 + amp_frac_error)
+
+        if axis == "X":
+            drive_phase = phase_error
+        elif axis == "Y":
+            drive_phase = (np.pi / 2.0) + phase_error
+        else:
+            raise ValueError("axis must be 'X' or 'Y'")
+
+        omega_x = omega_drive * np.cos(drive_phase)
+        omega_y = omega_drive * np.sin(drive_phase)
+        omega_z = self.tech_static_detuning
+
+        omega_eff = np.sqrt(omega_x**2 + omega_y**2 + omega_z**2)
+        if omega_eff == 0.0:
+            return rho
+
+        theta     = omega_eff * pulse_time
+        cos_h     = np.cos(theta / 2.0)
+        sin_h     = np.sin(theta / 2.0)
+        nx        = omega_x / omega_eff
+        ny        = omega_y / omega_eff
+        nz        = omega_z / omega_eff
+
+        U = np.array([
+            [cos_h - 1j * nz * sin_h,       (-1j * nx - ny) * sin_h],
+            [(-1j * nx + ny) * sin_h,        cos_h + 1j * nz * sin_h]
+        ], dtype=np.complex128)
+
+        return U @ rho @ U.conj().T
     
 
     def apply_noise(self, rho: np.ndarray) -> np.ndarray:

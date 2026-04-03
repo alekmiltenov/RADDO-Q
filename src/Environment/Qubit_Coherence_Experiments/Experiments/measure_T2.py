@@ -13,9 +13,9 @@ from noise import Noise
 # Config
 DT            = 1e-5                                            # dt should be << T2
 TEMPERATURE_K = 77.0                                            # Temperature in kelvin
-N_REPEATS     = 1000                                            # Repeat many times for smoother curve
+N_REPEATS     = 100                                             # Repeat many times for smoother curve
 
-tau_values = np.linspace(0, 1e-3, 1000)                       # total Hahn echo time values
+tau_values = np.linspace(0, 1e-2, 100)                          # total Hahn echo time values
 tau_steps = np.unique(np.round(tau_values / DT).astype(int))    # filter unique step numbers
 tau_steps = tau_steps[tau_steps % 2 == 0]                       # keep only even step counts
 TAUS = tau_steps * DT                                           # final filtered tau values
@@ -29,19 +29,19 @@ def hahn_echo_signal(tau: float) -> float:
         qubit = Qubit(rho=q_init(), dt=DT, temperature_Kelvin=TEMPERATURE_K)
         noise = Noise(dt=DT)
 
-        qubit.rho = q_Rx(np.pi / 2, qubit.rho)
+        qubit.rho = q_Rx(np.pi / 2, qubit.rho, noise)
 
         for _ in range(half_steps):
             # qubit.GAD()
             qubit.rho = noise.apply_noise(qubit.rho)
 
-        qubit.rho = q_Rx(np.pi, qubit.rho)
+        qubit.rho = q_Rx(np.pi, qubit.rho, noise)
 
         for _ in range(half_steps):
             # qubit.GAD()
             qubit.rho = noise.apply_noise(qubit.rho)
 
-        qubit.rho = q_Rx(np.pi / 2, qubit.rho)
+        qubit.rho = q_Rx(np.pi / 2, qubit.rho, noise)
 
         # Measure |1> state after final pi/2
         population_repeat_same_tau.append(float(np.real(qubit.rho[0, 0])))
@@ -112,7 +112,7 @@ ax.set_ylabel("⟨ρ₁₁⟩")
 ax.set_title("Hahn Echo T2 decay 77K")
 ax.set_ylim(0.0, 1.0)
 ax.set_xlim(taus_us[0], taus_us[-1])
-ax.set_xticks(np.arange(0, taus_us[-1] + 1, 200))
+ax.set_xticks(np.arange(0, taus_us[-1] + 1, 2000))
 ax.grid(True, alpha=0.3)
 
 if np.isfinite(T2):

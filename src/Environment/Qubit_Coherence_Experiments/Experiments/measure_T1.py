@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from qubit import Qubit
 from qubit_gates import q_init, q_Rx
+from noise import Noise
 
 NUM_RUNS = 100
 TEMPERATURE_K = 77.0
@@ -14,9 +15,10 @@ MAX_TIME = 30.0
 first_relaxation_times = []
 
 for run in range(NUM_RUNS):
-    rho0 = q_init()
-    rho0 = q_Rx(np.pi, rho0)
 
+    noise = Noise(dt=DT)
+    rho0 = q_init()
+    rho0 = q_Rx(np.pi, rho0, noise)
     qubit = Qubit(rho=rho0, dt=DT, temperature_Kelvin=TEMPERATURE_K)
 
     elapsed_time = 0.0
