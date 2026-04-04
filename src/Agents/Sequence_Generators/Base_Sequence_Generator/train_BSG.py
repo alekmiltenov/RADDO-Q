@@ -16,8 +16,7 @@ os.makedirs(MODEL_DIR, exist_ok=True)
 def make_env(seed: int):
     def _init():
         env = SequenceGeneratorEnv(
-            tau_values=[10e-6, 20e-6, 30e-6, 40e-6, 50e-6],
-            max_pulses=8192,
+            tau_values=[20e-6, 30e-6, 40e-6, 50e-6],
             seed=seed,
         )
         return env
@@ -25,7 +24,7 @@ def make_env(seed: int):
 
 
 if __name__ == "__main__":
-    N_ENVS = 20
+    N_ENVS = 2
     TOTAL_TIMESTEPS = 200_000
     RESUME_PATH = None
 
@@ -39,7 +38,7 @@ if __name__ == "__main__":
         model = RecurrentPPO(
             policy="MlpLstmPolicy",
             env=env,
-            learning_rate=3e-3,
+            learning_rate=4e-4,
             n_steps=64,
             batch_size=128,
             n_epochs=10,
@@ -58,7 +57,7 @@ if __name__ == "__main__":
         )
 
     checkpoint_callback = CheckpointCallback(
-        save_freq=max(10_000 // N_ENVS, 1),
+        save_freq=max(50_000 // N_ENVS, 1),
         save_path=MODEL_DIR,
         name_prefix="generator_rppo",
     )

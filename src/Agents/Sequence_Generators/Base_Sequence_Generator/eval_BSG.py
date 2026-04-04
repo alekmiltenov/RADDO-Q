@@ -26,11 +26,10 @@ def _to_dd_sequence(sequence):
     return dd_sequence
 
 
-def evaluate_sequence(sequence, tau_values, max_pulses):
+def evaluate_sequence(sequence, tau_values):
     dd_sequence = _to_dd_sequence(sequence)
 
     results, best_tau, best_t2 = Sweep_Tau_T2_DD(
-        n_pulses=max_pulses,
         taus=tau_values,
         dd_sequence=dd_sequence,
         n_jobs=1,

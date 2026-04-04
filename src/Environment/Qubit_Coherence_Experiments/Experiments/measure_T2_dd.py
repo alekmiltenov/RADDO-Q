@@ -10,7 +10,7 @@ from qubit import Qubit
 from qubit_gates import q_Rx, q_Ry
 from noise import Noise
 
-DT = 5e-6
+DT = 1e-5
 # --- DD Sequence ---
 PI   = np.pi
 CPMG = [('Y', 1)]
@@ -21,13 +21,12 @@ DD_SEQUENCE = CPMG
 
 # --- Config ---
 TEMPERATURE_K = 77.0
-N_REPEATS     = 16
-
+N_REPEATS     = 12
 
 N_PULSES = 65536
 N_PULSES = N_PULSES + ((-N_PULSES) % len(DD_SEQUENCE))
 
-TAUS = [10e-6 , 20e-6 , 30e-6 , 40e-6, 50e-6 , 60e-6 , 70e-6 , 80e-6]
+TAUS = [20e-6 , 30e-6 , 40e-6, 50e-6 , 60e-6 , 70e-6 , 80e-6]
 
 COHERENCE_THRESHOLD = np.exp(-1)
 
@@ -161,7 +160,7 @@ def extract_T2_DD(times, coherences):
 
     return t2_raw, t2_env, t2_fit
 
-def Sweep_Tau_T2_DD(n_pulses: int, taus, dd_sequence, n_jobs=-1, best_by="env", max_total_time=1.2):
+def Sweep_Tau_T2_DD(taus, dd_sequence, n_jobs=-1, best_by="env", max_total_time=1.2):
     def one_tau(tau):
         dt_in_tau = max(1, int(round(tau / DT)))
         actual_tau = dt_in_tau * DT
@@ -223,7 +222,6 @@ def main():
     start = time.perf_counter()
 
     results, best_tau, best_t2 = Sweep_Tau_T2_DD(
-        n_pulses=n_pulses,
         taus=taus,
         dd_sequence=dd_sequence,
         n_jobs=-1,

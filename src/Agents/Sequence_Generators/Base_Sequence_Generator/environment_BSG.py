@@ -8,13 +8,12 @@ from eval_BSG import evaluate_sequence
 class SequenceGeneratorEnv(gym.Env):
     metadata = {"render_modes": []}
 
-    def __init__(self,  tau_values: list[float], max_pulses: int, seed: int | None = None,):
+    def __init__(self,  tau_values: list[float], seed: int | None = None,):
         super().__init__()
 
         self.rng = np.random.default_rng(seed)
 
         self.tau_values = tau_values
-        self.max_pulses = max_pulses
         self.allowed_sequence_lengths = [4, 8, 10, 16, 32]
         self.sequence_length = None
 
@@ -118,6 +117,5 @@ class SequenceGeneratorEnv(gym.Env):
         result = evaluate_sequence(
             sequence=sequence,
             tau_values=self.tau_values,
-            max_pulses=self.max_pulses,
         )
         return result
