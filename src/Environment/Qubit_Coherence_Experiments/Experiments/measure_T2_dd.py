@@ -21,7 +21,7 @@ DD_SEQUENCE = CPMG
 
 # --- Config ---
 TEMPERATURE_K = 77.0
-N_REPEATS     = 16
+N_REPEATS     = 1
 
 
 N_PULSES = 65536
@@ -161,20 +161,24 @@ def extract_T2_DD(times, coherences):
 
     return t2_raw, t2_env, t2_fit
 
-def Sweep_Tau_T2_DD(n_pulses: int, taus, dd_sequence, n_jobs=-1, best_by="env"):
+def Sweep_Tau_T2_DD(n_pulses: int, taus, dd_sequence, n_jobs=-1, best_by="env", max_total_time=1.2):
     def one_tau(tau):
-        if tau > 40e-6:
-            n_pulses_eff = n_pulses // 2
-        else:
-            n_pulses_eff = n_pulses
+        dt_in_tau = max(1, int(round(tau / DT)))
+        actual_tau = dt_in_tau * DT
 
+        n_pulses_eff = int(max_total_time / actual_tau)
+
+        # make divisible by sequence length
         n_pulses_eff += (-n_pulses_eff) % len(dd_sequence)
+
+        n_pulses_eff = max(n_pulses_eff, 10 * len(dd_sequence))
 
         times, coherences = Average_DD(n_pulses_eff, tau, dd_sequence)
         t2_raw, t2_env, t2_fit = extract_T2_DD(times, coherences)
 
         return {
             "tau": tau,
+            "actual_tau": actual_tau,
             "n_pulses_used": n_pulses_eff,
             "times": times,
             "coherences": coherences,
