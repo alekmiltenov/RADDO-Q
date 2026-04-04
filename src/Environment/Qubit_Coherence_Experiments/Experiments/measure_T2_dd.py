@@ -10,7 +10,7 @@ from qubit import Qubit
 from qubit_gates import q_Rx, q_Ry
 from noise import Noise
 
-DT = 1e-6
+DT = 5e-6
 # --- DD Sequence ---
 PI   = np.pi
 CPMG = [('Y', 1)]
@@ -21,7 +21,7 @@ DD_SEQUENCE = CPMG
 
 # --- Config ---
 TEMPERATURE_K = 77.0
-N_REPEATS     = 1
+N_REPEATS     = 16
 
 
 N_PULSES = 65536
