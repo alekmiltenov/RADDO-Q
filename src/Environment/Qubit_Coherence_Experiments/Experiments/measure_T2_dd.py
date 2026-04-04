@@ -23,8 +23,6 @@ DD_SEQUENCE = CPMG
 TEMPERATURE_K = 77.0
 N_REPEATS     = 12
 
-N_PULSES = 65536
-N_PULSES = N_PULSES + ((-N_PULSES) % len(DD_SEQUENCE))
 
 TAUS = [20e-6 , 30e-6 , 40e-6, 50e-6 , 60e-6 , 70e-6 , 80e-6]
 
@@ -211,11 +209,10 @@ def Sweep_Tau_T2_DD(taus, dd_sequence, n_jobs=-1, best_by="env", max_total_time=
 
     return results, best_tau, best_t2
 
-##################################################################################
+
 import time
 
 def main():
-    n_pulses = N_PULSES
     dd_sequence = CPMG
     taus = TAUS
 

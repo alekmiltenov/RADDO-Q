@@ -14,7 +14,7 @@ class SequenceGeneratorEnv(gym.Env):
         self.rng = np.random.default_rng(seed)
 
         self.tau_values = tau_values
-        self.allowed_sequence_lengths = [4, 8, 10, 16, 32]
+        self.allowed_sequence_lengths = [4, 8, 16, 32]
         self.sequence_length = None
 
         self.sequence = []

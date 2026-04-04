@@ -39,7 +39,7 @@ class Noise:
     RTN_SWITCHING_RATE_BASE          = 500.0
     RTN_NU_BASE                      = 1.4e2   
     QS_DELTA_OMEGA_BASE              = 4e4
-    WHITE_GAMMA_PHI_BASE             = 1.0
+    WHITE_GAMMA_PHI_BASE             = 0.8
     ONE_OVER_F_NUM_FLUCTUATORS       = 8
     ONE_OVER_F_LAMBDA_MIN            = 1e-1
     ONE_OVER_F_LAMBDA_MAX            = 1e2

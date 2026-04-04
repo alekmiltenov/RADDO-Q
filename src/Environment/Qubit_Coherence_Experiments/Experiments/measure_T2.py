@@ -15,7 +15,7 @@ DT            = 1e-5                                            # dt should be <
 TEMPERATURE_K = 77.0                                            # Temperature in kelvin
 N_REPEATS     = 100                                             # Repeat many times for smoother curve
 
-tau_values = np.linspace(0, 1e-2, 100)                          # total Hahn echo time values
+tau_values = np.linspace(0, 1e-1, 100)                          # total Hahn echo time values
 tau_steps = np.unique(np.round(tau_values / DT).astype(int))    # filter unique step numbers
 tau_steps = tau_steps[tau_steps % 2 == 0]                       # keep only even step counts
 TAUS = tau_steps * DT                                           # final filtered tau values
