@@ -14,20 +14,20 @@ DT = 1e-6
 # --- DD Sequence ---
 PI   = np.pi
 CPMG = [('Y', 1)]
-XY4  = ['X', 'Y', 'X', 'Y']
-XY8  = ['X', 'Y', 'X', 'Y', 'Y', 'X', 'Y', 'X']
+XY4  = [('X', 1), ('Y', 1), ('X', 1), ('Y', 1)]
+XY8  = [('X', 1), ('Y', 1), ('X', 1), ('Y', 1), ('Y', 1), ('X', 1), ('Y', 1), ('X', 1)]
 
 DD_SEQUENCE = CPMG
 
 # --- Config ---
 TEMPERATURE_K = 77.0
-N_REPEATS     = 10
+N_REPEATS     = 12
 INCLUDE_GAD    = True
 
-N_PULSES = 16384
+N_PULSES = 32768
 N_PULSES = N_PULSES + ((-N_PULSES) % len(DD_SEQUENCE))
 
-TAUS = np.linspace(5e-6, 75e-6, 20)
+TAUS = [10e-6 , 20e-6 , 30e-6 , 40e-6, 50e-6 , 60e-6 , 70e-6 , 80e-6]
 
 COHERENCE_THRESHOLD = np.exp(-1)
 
@@ -73,7 +73,7 @@ def Dynamic_Decoupling(n_pulses: int, tau: float, dd_sequence):
                     qubit.GAD()
                 qubit.rho = noise.apply_noise(qubit.rho)
 
-        if (i+1) % (10 * len(DD_SEQUENCE)) == 0:
+        if (i+1) % (10 * len(dd_sequence)) == 0:
             current_time = ((actual_tau/2) + ((i+1)*actual_tau)) 
             sampled_times.append(current_time)
             sampled_rho01.append(complex(qubit.rho[0, 1]))
@@ -108,10 +108,30 @@ def first_drop_below_threshold(times, coherences, threshold=1/np.e):
 def exp_decay(t, A, T2):
     return A * np.exp(-t / T2)
 
+def threshold_crossing_interpolated(times, coherences, threshold=1/np.e):
+    times = np.array(times, dtype=float)
+    coherences = np.array(coherences, dtype=float)
 
-def extract_T2_DD(n_pulses: int, tau: float, dd_sequence):
-    times, coherences = Average_DD(n_pulses, tau, dd_sequence)
+    if len(times) == 0:
+        return np.nan
 
+    if coherences[0] <= threshold:
+        return times[0]
+
+    for i in range(1, len(coherences)):
+        c1 = coherences[i - 1]
+        c2 = coherences[i]
+        t1 = times[i - 1]
+        t2 = times[i]
+
+        if c1 > threshold and c2 <= threshold:
+            if c2 == c1:
+                return t2
+            return t1 + (threshold - c1) * (t2 - t1) / (c2 - c1)
+
+    return np.nan
+
+def extract_T2_DD(times, coherences):
     times = np.array(times, dtype=float)
     coherences = np.array(coherences, dtype=float)
 
@@ -124,12 +144,12 @@ def extract_T2_DD(n_pulses: int, tau: float, dd_sequence):
 
     threshold = 1 / np.e
 
-    # 1) raw first drop
-    t2_raw = first_drop_below_threshold(times, coherences, threshold)
+    # 1) raw threshold with interpolation
+    t2_raw = threshold_crossing_interpolated(times, coherences, threshold)
 
-    # 2) envelope first drop
+    # 2) envelope threshold with interpolation
     coherences_env = np.minimum.accumulate(coherences)
-    t2_env = first_drop_below_threshold(times, coherences_env, threshold)
+    t2_env = threshold_crossing_interpolated(times, coherences_env, threshold)
 
     # 3) exponential fit
     try:
@@ -142,30 +162,89 @@ def extract_T2_DD(n_pulses: int, tau: float, dd_sequence):
 
     return t2_raw, t2_env, t2_fit
 
+def Sweep_Tau_T2_DD(n_pulses: int, taus, dd_sequence, n_jobs=-1, best_by="env"):
+    def one_tau(tau):
+        times, coherences = Average_DD(n_pulses, tau, dd_sequence)
+        t2_raw, t2_env, t2_fit = extract_T2_DD(times, coherences)
+
+        return {
+            "tau": tau,
+            "times": times,
+            "coherences": coherences,
+            "t2_raw": t2_raw,
+            "t2_env": t2_env,
+            "t2_fit": t2_fit
+        }
+
+    results = Parallel(n_jobs=n_jobs)(
+        delayed(one_tau)(tau) for tau in taus
+    )
+
+    results.sort(key=lambda r: r["tau"])
+
+    if best_by == "raw":
+        key = "t2_raw"
+    elif best_by == "fit":
+        key = "t2_fit"
+    else:
+        key = "t2_env"   # safest default
+
+    valid_results = [r for r in results if not np.isnan(r[key])]
+
+    if len(valid_results) == 0:
+        best_tau = np.nan
+        best_t2 = np.nan
+    else:
+        best_result = max(valid_results, key=lambda r: r[key])
+        best_tau = best_result["tau"]
+        best_t2 = best_result[key]
+
+    return results, best_tau, best_t2
+
 ##################################################################################
 import time
 
 def main():
-    n_pulses = 16384
-    tau = 100e-6   # 20 us
-    dd_sequence = [('Y', 1)]   # example XY
+    n_pulses = N_PULSES
+    dd_sequence = CPMG
+    taus = TAUS
 
     start = time.perf_counter()
 
-    t2_raw, t2_env, t2_fit = extract_T2_DD(
+    results, best_tau, best_t2 = Sweep_Tau_T2_DD(
         n_pulses=n_pulses,
-        tau=tau,
-        dd_sequence=dd_sequence
+        taus=taus,
+        dd_sequence=dd_sequence,
+        n_jobs=-1,
+        best_by="env"
     )
 
     end = time.perf_counter()
 
-    print(f"tau = {tau:.2e} s")
-    print(f"T2_DD raw threshold   = {t2_raw}")
-    print(f"T2_DD envelope        = {t2_env}")
-    print(f"T2_DD exp fit         = {t2_fit}")
-    print(f"Runtime = {end - start:.3f} s")
+    for r in results:
+        print(f"tau = {r['tau']:.2e} s")
+        print(f"T2_DD raw threshold   = {r['t2_raw']}")
+        print(f"T2_DD envelope        = {r['t2_env']}")
+        print(f"T2_DD exp fit         = {r['t2_fit']}")
+        print()
 
+    print(f"Best tau = {best_tau}")
+    print(f"Best T2_DD = {best_t2}")
+    print(f"Total runtime = {end - start:.3f} s")
 
-if __name__ == "__main__":
+    plt.figure(figsize=(10, 6))
+
+    for r in results:
+        plt.plot(r["times"], r["coherences"], label=f"tau = {r['tau'] * 1e6:.1f} us")
+
+    plt.axhline(COHERENCE_THRESHOLD, linestyle='--', label='1/e')
+    plt.xlabel("Time (s)")
+    plt.ylabel("Coherence")
+    plt.title("Coherence decay curves for different tau")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+if __name__ == '__main__':
     main()
