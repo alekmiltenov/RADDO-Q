@@ -21,10 +21,10 @@ DD_SEQUENCE = CPMG
 
 # --- Config ---
 TEMPERATURE_K = 77.0
-N_REPEATS     = 12
-INCLUDE_GAD    = True
+N_REPEATS     = 4
 
-N_PULSES = 32768
+
+N_PULSES = 65536
 N_PULSES = N_PULSES + ((-N_PULSES) % len(DD_SEQUENCE))
 
 TAUS = [10e-6 , 20e-6 , 30e-6 , 40e-6, 50e-6 , 60e-6 , 70e-6 , 80e-6]
@@ -48,8 +48,7 @@ def Dynamic_Decoupling(n_pulses: int, tau: float, dd_sequence):
 
     # Initial tau/2
     for _ in range(int(dt_in_tau/2)):
-        if INCLUDE_GAD:
-            qubit.GAD()
+        qubit.GAD()
         qubit.rho = noise.apply_noise(qubit.rho)
 
     # Execute sequence for total of N pulses
@@ -59,18 +58,18 @@ def Dynamic_Decoupling(n_pulses: int, tau: float, dd_sequence):
         axis, angle = dd_sequence[i % len(dd_sequence)]
         if axis == 'X': qubit.rho = q_Rx((np.pi)/angle, qubit.rho, noise)
         elif axis == 'Y': qubit.rho = q_Ry((np.pi)/angle, qubit.rho, noise)
+        
+        
 
         # Tau/2 if last pulse
         if i == (n_pulses-1):
             for _ in range(int(dt_in_tau/2)):
-                if INCLUDE_GAD:
-                    qubit.GAD()
+                qubit.GAD()
                 qubit.rho = noise.apply_noise(qubit.rho)
         else:
             # Free evolution in tau
             for _ in range(dt_in_tau):
-                if INCLUDE_GAD:
-                    qubit.GAD()
+                qubit.GAD()
                 qubit.rho = noise.apply_noise(qubit.rho)
 
         if (i+1) % (10 * len(dd_sequence)) == 0:
@@ -164,11 +163,19 @@ def extract_T2_DD(times, coherences):
 
 def Sweep_Tau_T2_DD(n_pulses: int, taus, dd_sequence, n_jobs=-1, best_by="env"):
     def one_tau(tau):
-        times, coherences = Average_DD(n_pulses, tau, dd_sequence)
+        if tau > 50e-6:
+            n_pulses_eff = n_pulses // 2
+        else:
+            n_pulses_eff = n_pulses
+
+        n_pulses_eff += (-n_pulses_eff) % len(dd_sequence)
+
+        times, coherences = Average_DD(n_pulses_eff, tau, dd_sequence)
         t2_raw, t2_env, t2_fit = extract_T2_DD(times, coherences)
 
         return {
             "tau": tau,
+            "n_pulses_used": n_pulses_eff,
             "times": times,
             "coherences": coherences,
             "t2_raw": t2_raw,
@@ -187,7 +194,7 @@ def Sweep_Tau_T2_DD(n_pulses: int, taus, dd_sequence, n_jobs=-1, best_by="env"):
     elif best_by == "fit":
         key = "t2_fit"
     else:
-        key = "t2_env"   # safest default
+        key = "t2_env"
 
     valid_results = [r for r in results if not np.isnan(r[key])]
 

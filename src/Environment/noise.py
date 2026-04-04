@@ -33,21 +33,21 @@ class Noise:
 
     # Base values
     OU_SLOW_TAU_C_BASE               = 1e-2
-    OU_SLOW_DELTA_OMEGA_RMS_BASE     = 8e1   # reduced 10x: spin-bath-like noise is quasi-static & refocused; residual is weak
+    OU_SLOW_DELTA_OMEGA_RMS_BASE     = 8e1
     OU_FAST_TAU_C_BASE               = 1e-4
-    OU_FAST_DELTA_OMEGA_RMS_BASE     = 5e1   # reduced 10x
+    OU_FAST_DELTA_OMEGA_RMS_BASE     = 5e1   
     RTN_SWITCHING_RATE_BASE          = 500.0
-    RTN_NU_BASE                      = 2e2   # reduced 10x
+    RTN_NU_BASE                      = 1.4e2   
     QS_DELTA_OMEGA_BASE              = 4e4
-    WHITE_GAMMA_PHI_BASE             = 1.2   # phonon dephasing → T2_white ≈ 580 ms (target ceiling)
+    WHITE_GAMMA_PHI_BASE             = 1.0
     ONE_OVER_F_NUM_FLUCTUATORS       = 8
     ONE_OVER_F_LAMBDA_MIN            = 1e-1
     ONE_OVER_F_LAMBDA_MAX            = 1e2
-    ONE_OVER_F_TOTAL_NU_BASE         = 8e1   # reduced 10x
+    ONE_OVER_F_TOTAL_NU_BASE         = 8e1
 
     TECH_T_PI_BASE                   = 100e-9
     TECH_STATIC_DETUNING_SIGMA_BASE  = 2.0 * np.pi * 2.0e3
-    TECH_AMP_FRAC_SIGMA_BASE         = 1e-3
+    TECH_AMP_FRAC_SIGMA_BASE         = 1.6e-3
     TECH_TIME_FRAC_SIGMA_BASE        = 1e-3
     TECH_PHASE_SIGMA_BASE            = 2e-4
 
