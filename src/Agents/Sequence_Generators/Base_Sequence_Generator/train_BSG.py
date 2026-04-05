@@ -24,7 +24,7 @@ TAU_VALUES = [20e-6, 30e-6, 40e-6, 50e-6]
 # "subproc" -> correct choice for real training when N_ENVS > 1
 VEC_ENV_TYPE = "subproc"
 
-N_ENVS = 4
+N_ENVS = 12
 TOTAL_TIMESTEPS = 200_000
 BASE_SEED = 1000
 RESUME_PATH = None
