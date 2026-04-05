@@ -46,7 +46,7 @@ class Noise:
     ONE_OVER_F_TOTAL_NU_BASE         = 8e1
 
     TECH_T_PI_BASE                   = 100e-9
-    TECH_STATIC_DETUNING_SIGMA_BASE  = 2.0 * np.pi * 2.0e3
+    TECH_STATIC_DETUNING_SIGMA_BASE  = 2.0 * np.pi * 1.0e3
     TECH_AMP_FRAC_SIGMA_BASE         = 1.2e-3
     TECH_TIME_FRAC_SIGMA_BASE        = 1e-3
     TECH_PHASE_SIGMA_BASE            = 2e-4
@@ -80,7 +80,7 @@ class Noise:
         self.rtn_lambda              = self.RTN_SWITCHING_RATE_BASE * self.rng.uniform(0.2, 2)
         self.rtn_nu                  = self.RTN_NU_BASE * self.rng.uniform(0.5, 2)
         self.qs_delta_omega          = self.QS_DELTA_OMEGA_BASE * self.rng.standard_normal()
-        self.white_gamma_phi         = self.WHITE_GAMMA_PHI_BASE * self.rng.uniform(0.3, 3)
+        self.white_gamma_phi         = self.WHITE_GAMMA_PHI_BASE * self.rng.uniform(0.75, 1.25)
         self.one_over_f_lambdas = np.logspace(
             np.log10(self.ONE_OVER_F_LAMBDA_MIN),
             np.log10(self.ONE_OVER_F_LAMBDA_MAX),
