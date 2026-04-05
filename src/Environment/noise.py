@@ -39,16 +39,16 @@ class Noise:
     RTN_SWITCHING_RATE_BASE          = 500.0
     RTN_NU_BASE                      = 1.4e2   
     QS_DELTA_OMEGA_BASE              = 4e4
-    WHITE_GAMMA_PHI_BASE             = 0.7
+    WHITE_GAMMA_PHI_BASE             = 0.6
     ONE_OVER_F_NUM_FLUCTUATORS       = 8
     ONE_OVER_F_LAMBDA_MIN            = 1e-1
     ONE_OVER_F_LAMBDA_MAX            = 1e2
     ONE_OVER_F_TOTAL_NU_BASE         = 8e1
 
     TECH_T_PI_BASE                   = 100e-9
-    TECH_STATIC_DETUNING_SIGMA_BASE  = 2.0 * np.pi * 1.0e3
+    TECH_STATIC_DETUNING_SIGMA_BASE  = 2.0 * np.pi * 1.0e2
     TECH_AMP_FRAC_SIGMA_BASE         = 1.1e-3
-    TECH_TIME_FRAC_SIGMA_BASE        = 8e-4
+    TECH_TIME_FRAC_SIGMA_BASE        = 5e-4
     TECH_PHASE_SIGMA_BASE            = 2e-4
 
     PAULI_X = np.array([[0.0, 1.0],
@@ -71,16 +71,16 @@ class Noise:
         self.dt = dt
         self.rng = np.random.default_rng()
 
-        self.ou_slow_tau_c           = self.OU_SLOW_TAU_C_BASE * self.rng.uniform(0.3, 3.0)
+        self.ou_slow_tau_c           = self.OU_SLOW_TAU_C_BASE * self.rng.uniform(0.2, 5.0)
         self.ou_slow_delta_omega_rms = self.OU_SLOW_DELTA_OMEGA_RMS_BASE * self.rng.uniform(0.5, 2.0)
         self.ou_slow_delta_omega     = self.ou_slow_delta_omega_rms * self.rng.standard_normal()
-        self.ou_fast_tau_c           = self.OU_FAST_TAU_C_BASE * self.rng.uniform(0.4, 2.4)
+        self.ou_fast_tau_c           = self.OU_FAST_TAU_C_BASE * self.rng.uniform(0.2, 5.0)
         self.ou_fast_delta_omega_rms = self.OU_FAST_DELTA_OMEGA_RMS_BASE * self.rng.uniform(0.5, 2.0)
         self.ou_fast_delta_omega     = self.ou_fast_delta_omega_rms * self.rng.standard_normal()
         self.rtn_lambda              = self.RTN_SWITCHING_RATE_BASE * self.rng.uniform(0.2, 2)
-        self.rtn_nu                  = self.RTN_NU_BASE * self.rng.uniform(0.65, 1.8)
+        self.rtn_nu                  = self.RTN_NU_BASE * self.rng.uniform(0.5, 2)
         self.qs_delta_omega          = self.QS_DELTA_OMEGA_BASE * self.rng.standard_normal()
-        self.white_gamma_phi         = self.WHITE_GAMMA_PHI_BASE * self.rng.uniform(0.75, 1.125)
+        self.white_gamma_phi         = self.WHITE_GAMMA_PHI_BASE * self.rng.uniform(0.6, 1.1)
         self.one_over_f_lambdas = np.logspace(
             np.log10(self.ONE_OVER_F_LAMBDA_MIN),
             np.log10(self.ONE_OVER_F_LAMBDA_MAX),
