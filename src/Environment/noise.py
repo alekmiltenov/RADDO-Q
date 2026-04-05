@@ -71,16 +71,16 @@ class Noise:
         self.dt = dt
         self.rng = np.random.default_rng()
 
-        self.ou_slow_tau_c           = self.OU_SLOW_TAU_C_BASE * self.rng.uniform(0.2, 5.0)
+        self.ou_slow_tau_c           = self.OU_SLOW_TAU_C_BASE * self.rng.uniform(0.3, 3.0)
         self.ou_slow_delta_omega_rms = self.OU_SLOW_DELTA_OMEGA_RMS_BASE * self.rng.uniform(0.5, 2.0)
         self.ou_slow_delta_omega     = self.ou_slow_delta_omega_rms * self.rng.standard_normal()
-        self.ou_fast_tau_c           = self.OU_FAST_TAU_C_BASE * self.rng.uniform(0.2, 5.0)
+        self.ou_fast_tau_c           = self.OU_FAST_TAU_C_BASE * self.rng.uniform(0.4, 2.4)
         self.ou_fast_delta_omega_rms = self.OU_FAST_DELTA_OMEGA_RMS_BASE * self.rng.uniform(0.5, 2.0)
         self.ou_fast_delta_omega     = self.ou_fast_delta_omega_rms * self.rng.standard_normal()
         self.rtn_lambda              = self.RTN_SWITCHING_RATE_BASE * self.rng.uniform(0.2, 2)
-        self.rtn_nu                  = self.RTN_NU_BASE * self.rng.uniform(0.5, 2)
+        self.rtn_nu                  = self.RTN_NU_BASE * self.rng.uniform(0.65, 1.8)
         self.qs_delta_omega          = self.QS_DELTA_OMEGA_BASE * self.rng.standard_normal()
-        self.white_gamma_phi         = self.WHITE_GAMMA_PHI_BASE * self.rng.uniform(0.75, 1.25)
+        self.white_gamma_phi         = self.WHITE_GAMMA_PHI_BASE * self.rng.uniform(0.75, 1.125)
         self.one_over_f_lambdas = np.logspace(
             np.log10(self.ONE_OVER_F_LAMBDA_MIN),
             np.log10(self.ONE_OVER_F_LAMBDA_MAX),
