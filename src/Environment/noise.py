@@ -46,7 +46,7 @@ class Noise:
     ONE_OVER_F_TOTAL_NU_BASE         = 8e1
 
     TECH_T_PI_BASE                   = 100e-9
-    TECH_STATIC_DETUNING_SIGMA_BASE  = 2.0 * np.pi * 5.0e2
+    TECH_STATIC_DETUNING_SIGMA_BASE  = 2.0 * np.pi * 8e2
     TECH_AMP_FRAC_SIGMA_BASE         = 1.1e-3
     TECH_TIME_FRAC_SIGMA_BASE        = 5e-4
     TECH_PHASE_SIGMA_BASE            = 2e-4
