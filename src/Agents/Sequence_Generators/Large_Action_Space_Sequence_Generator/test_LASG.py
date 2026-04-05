@@ -6,13 +6,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sb3_contrib import RecurrentPPO
 
-from environment_BSG import SequenceGeneratorEnv
-from eval_BSG import Sweep_Tau_T2_DD, _to_dd_sequence
+from environment_LASG import SequenceGeneratorEnv
+from eval_LASG import Sweep_Tau_T2_DD, _to_dd_sequence
 
 
 TAU_VALUES_DEFAULT = [20e-6, 30e-6, 40e-6, 50e-6]
-ALLOWED_LENGTHS = [4, 8, 10, 16, 32]
-
+ALLOWED_LENGTHS = [4, 8, 16, 32]
 
 BASELINE_DD_SEQUENCES = {
     "CPMG": [("Y", 1)],
@@ -24,6 +23,12 @@ ACTION_TO_TOKEN = {
     0: "I",
     1: "Xpi",
     2: "Ypi",
+    3: "Xpi2",
+    4: "Ypi2",
+    5: "Xpi3",
+    6: "Ypi3",
+    7: "Xpi4",
+    8: "Ypi4",
 }
 
 
