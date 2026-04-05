@@ -70,10 +70,11 @@ class SequenceGeneratorEnv(gym.Env):
         if terminated:
             if len(self.sequence) > 0 and all(p == self.sequence[0] for p in self.sequence):
                 reward = 0.0
+                info["raw_score"] = 0.0
             else:
                 eval_result = self._evaluate_finished_sequence()
                 reward = float(eval_result) * 100.0
-            info["raw_score"] = float(eval_result)
+                info["raw_score"] = float(eval_result)
             info["sequence_length"] = self.sequence_length
 
             info["sequence_tokens"] = self._decode_sequence(self.sequence)

@@ -281,7 +281,7 @@ def main() -> None:
         sequence_length=args.sequence_length,
         tau_values=args.taus,
         seed=args.seed,
-        deterministic=args.stochastic,
+        deterministic=not args.stochastic,
     )
 
     evaluations = [
