@@ -23,7 +23,7 @@ DD_SEQUENCE = CPMG_Y
 
 # --- Config ---
 TEMPERATURE_K = 77.0
-N_REPEATS     = 30
+N_REPEATS     = 32
 
 
 TAUS = [20e-6 , 30e-6 , 40e-6, 50e-6 , 60e-6 , 70e-6]
@@ -215,7 +215,7 @@ def Sweep_Tau_T2_DD(taus, dd_sequence, n_jobs=-1, best_by="env", max_total_time=
 import time
 
 def main():
-    dd_sequence = CPMG_X8
+    dd_sequence = CPMG_X
     taus = TAUS
 
     start = time.perf_counter()
