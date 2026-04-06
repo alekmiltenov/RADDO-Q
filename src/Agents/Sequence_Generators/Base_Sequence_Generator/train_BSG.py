@@ -22,24 +22,24 @@ TAU_VALUES = [20e-6, 30e-6, 40e-6, 50e-6]
 
 # "dummy" -> easiest for debugging
 # "subproc" -> correct choice for real training when N_ENVS > 1
-VEC_ENV_TYPE = "subproc"
+VEC_ENV_TYPE = "dummy"
 
-N_ENVS = 12
+N_ENVS = 1
 TOTAL_TIMESTEPS = 200_000
 BASE_SEED = 1000
-RESUME_PATH = None
+RESUME_PATH = "models/generator_rppo_interrupt_safe"
 
 RUN_NAME = "generator_rppo_run"
 MONITOR_FILE = os.path.join(LOG_DIR, "vec_monitor.csv")
 
-LEARNING_RATE = 4e-4
+LEARNING_RATE = 3e-4
 N_STEPS = 64
 N_EPOCHS = 10
 
 GAMMA = 1.0
 GAE_LAMBDA = 0.95
 CLIP_RANGE = 0.2
-ENT_COEF = 0.01
+ENT_COEF = 0.03
 VF_COEF = 0.5
 MAX_GRAD_NORM = 0.5
 
@@ -92,10 +92,7 @@ def choose_batch_size(n_steps: int, n_envs: int, preferred: int = 128) -> int:
 
 
 class EpisodeStatsTensorboardCallback(BaseCallback):
-    """
-    Logs domain-relevant episode stats to TensorBoard.
-    Uses the model's rolling episode info buffer.
-    """
+
 
     def __init__(self, verbose: int = 0):
         super().__init__(verbose)
@@ -176,7 +173,7 @@ if __name__ == "__main__":
         )
 
     checkpoint_callback = CheckpointCallback(
-        save_freq=max(50_000 // N_ENVS, 1),
+        save_freq=max(1_000 // N_ENVS, 1),
         save_path=MODEL_DIR,
         name_prefix="generator_rppo",
     )

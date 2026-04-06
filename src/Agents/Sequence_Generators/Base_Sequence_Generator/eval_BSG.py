@@ -32,7 +32,7 @@ def evaluate_sequence(sequence, tau_values):
     results, best_tau, best_t2 = Sweep_Tau_T2_DD(
         taus=tau_values,
         dd_sequence=dd_sequence,
-        n_jobs=1,
+        n_jobs=-1,
         best_by="env",
     )
 

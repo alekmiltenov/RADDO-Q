@@ -21,7 +21,7 @@ DD_SEQUENCE = CPMG
 
 # --- Config ---
 TEMPERATURE_K = 77.0
-N_REPEATS     = 6
+N_REPEATS     = 12
 
 
 TAUS = [20e-6 , 30e-6 , 40e-6, 50e-6 , 60e-6 , 70e-6]
