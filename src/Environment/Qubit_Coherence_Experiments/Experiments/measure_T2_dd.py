@@ -21,7 +21,7 @@ DD_SEQUENCE = CPMG
 
 # --- Config ---
 TEMPERATURE_K = 77.0
-N_REPEATS     = 10
+N_REPEATS     = 1
 
 
 TAUS = [20e-6 , 30e-6 , 40e-6, 50e-6 , 60e-6 , 70e-6]
@@ -158,7 +158,7 @@ def extract_T2_DD(times, coherences):
 
     return t2_raw, t2_env, t2_fit
 
-def Sweep_Tau_T2_DD(taus, dd_sequence, n_jobs=-1, best_by="env", max_total_time=1.2):
+def Sweep_Tau_T2_DD(taus, dd_sequence, n_jobs=-1, best_by="env", max_total_time=0.24):
     def one_tau(tau):
         dt_in_tau = max(1, int(round(tau / DT)))
         actual_tau = dt_in_tau * DT
