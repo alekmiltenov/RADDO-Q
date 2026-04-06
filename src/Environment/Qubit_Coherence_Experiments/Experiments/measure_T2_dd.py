@@ -13,7 +13,7 @@ from noise import Noise
 DT = 1e-5
 # --- DD Sequence ---
 PI   = np.pi
-CPMG = [('Y', 1)]
+CPMG = [('Y', 1),('Y', 1)]
 XY4  = [('X', 1), ('Y', 1), ('X', 1), ('Y', 1)]
 XY8  = [('X', 1), ('Y', 1), ('X', 1), ('Y', 1), ('Y', 1), ('X', 1), ('Y', 1), ('X', 1)]
 
@@ -21,7 +21,7 @@ DD_SEQUENCE = CPMG
 
 # --- Config ---
 TEMPERATURE_K = 77.0
-N_REPEATS     = 1
+N_REPEATS     = 40
 
 
 TAUS = [20e-6 , 30e-6 , 40e-6, 50e-6 , 60e-6 , 70e-6]
@@ -53,8 +53,8 @@ def Dynamic_Decoupling(n_pulses: int, tau: float, dd_sequence):
         
         # PI pulse
         axis, angle = dd_sequence[i % len(dd_sequence)]
-        if axis == 'X': qubit.rho = q_Rx((np.pi)/angle, qubit.rho)
-        elif axis == 'Y': qubit.rho = q_Ry((np.pi)/angle, qubit.rho)
+        if axis == 'X': qubit.rho = q_Rx((np.pi)/angle, qubit.rho, noise)
+        elif axis == 'Y': qubit.rho = q_Ry((np.pi)/angle, qubit.rho, noise)
         
         
 
@@ -158,7 +158,7 @@ def extract_T2_DD(times, coherences):
 
     return t2_raw, t2_env, t2_fit
 
-def Sweep_Tau_T2_DD(taus, dd_sequence, n_jobs=-1, best_by="env", max_total_time=0.24):
+def Sweep_Tau_T2_DD(taus, dd_sequence, n_jobs=-1, best_by="env", max_total_time=0.100):
     def one_tau(tau):
         dt_in_tau = max(1, int(round(tau / DT)))
         actual_tau = dt_in_tau * DT
@@ -168,7 +168,7 @@ def Sweep_Tau_T2_DD(taus, dd_sequence, n_jobs=-1, best_by="env", max_total_time=
         # make divisible by sequence length
         n_pulses_eff += (-n_pulses_eff) % len(dd_sequence)
 
-        n_pulses_eff = max(n_pulses_eff, 10 * len(dd_sequence))
+        n_pulses_eff = max(n_pulses_eff, 4 * len(dd_sequence))
 
         times, coherences = Average_DD(n_pulses_eff, tau, dd_sequence)
         t2_raw, t2_env, t2_fit = extract_T2_DD(times, coherences)

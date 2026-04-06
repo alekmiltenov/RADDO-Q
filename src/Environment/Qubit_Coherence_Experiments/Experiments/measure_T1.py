@@ -18,7 +18,7 @@ for run in range(NUM_RUNS):
 
     noise = Noise(dt=DT)
     rho0 = q_init()
-    rho0 = q_Rx(np.pi, rho0)
+    rho0 = q_Rx(np.pi, rho0, noise)
     qubit = Qubit(rho=rho0, dt=DT, temperature_Kelvin=TEMPERATURE_K)
 
     elapsed_time = 0.0

@@ -27,13 +27,13 @@ def ramsey_signal(tau: float) -> float:
         qubit = Qubit(rho=q_init(), dt=DT, temperature_Kelvin=TEMPERATURE_K)
         noise = Noise(dt=DT)
 
-        qubit.rho = q_Rx(np.pi / 2, qubit.rho)
+        qubit.rho = q_Rx(np.pi / 2, qubit.rho, noise)
 
         for _ in range(steps):
             # qubit.GAD()
             qubit.rho = noise.apply_noise(qubit.rho)
 
-        qubit.rho = q_Rx(np.pi / 2, qubit.rho)
+        qubit.rho = q_Rx(np.pi / 2, qubit.rho, noise)
 
         # Measure |1> state after pi/2
         population_repeat_same_tau.append(float(np.real(qubit.rho[1, 1])))

@@ -19,23 +19,13 @@ def q_excite():
     return rho
 
 
-def q_Rx(theta, rho):
-    cos = np.cos(theta / 2.0)
-    sin = np.sin(theta / 2.0)
-    U = np.array([[cos , -1j * sin],
-                  [-1j * sin , cos]], dtype=np.complex128)
-
-    rho = apply_Unitary(rho, U)
+def q_Rx(theta, rho, noise):
+    rho = noise.apply_imperfect_pulse(rho, "X", theta)
     return rho
 
 
-def q_Ry(theta, rho):
-    cos = np.cos(theta / 2.0)
-    sin = np.sin(theta / 2.0)
-    U = np.array([[cos , -sin],
-                  [sin , cos]], dtype=np.complex128)
-
-    rho = apply_Unitary(rho, U)
+def q_Ry(theta, rho, noise):
+    rho = noise.apply_imperfect_pulse(rho, "Y", theta)
     return rho
 
 

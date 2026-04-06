@@ -33,17 +33,17 @@ class Noise:
 
     # Base values
     OU_SLOW_TAU_C_BASE               = 1e-2
-    OU_SLOW_DELTA_OMEGA_RMS_BASE     = 4.6e2
-    OU_FAST_TAU_C_BASE               = 1e-4
-    OU_FAST_DELTA_OMEGA_RMS_BASE     = 8.4e2
-    RTN_SWITCHING_RATE_BASE          = 500.0
-    RTN_NU_BASE                      = 1.2e3
+    OU_SLOW_DELTA_OMEGA_RMS_BASE     = 7.2e2
+    OU_FAST_TAU_C_BASE               = 5e-5
+    OU_FAST_DELTA_OMEGA_RMS_BASE     = 11.4e2
+    RTN_SWITCHING_RATE_BASE          = 770.0
+    RTN_NU_BASE                      = 2e3
     QS_DELTA_OMEGA_BASE              = 1e4
-    WHITE_GAMMA_PHI_BASE             = 6
-    ONE_OVER_F_NUM_FLUCTUATORS       = 10
+    WHITE_GAMMA_PHI_BASE             = 18.0
+    ONE_OVER_F_NUM_FLUCTUATORS       = 8
     ONE_OVER_F_LAMBDA_MIN            = 1e-1
-    ONE_OVER_F_LAMBDA_MAX            = 1e2
-    ONE_OVER_F_TOTAL_NU_BASE         = 1.6e3
+    ONE_OVER_F_LAMBDA_MAX            = 12e2
+    ONE_OVER_F_TOTAL_NU_BASE         = 4.2e3
 
     TECH_T_PI_BASE                   = 100e-9
     TECH_STATIC_DETUNING_SIGMA_BASE  = 2.0 * np.pi * 8e2
