@@ -69,7 +69,7 @@ def Dynamic_Decoupling(n_pulses: int, tau: float, dd_sequence):
                 qubit.GAD()
                 qubit.rho = noise.apply_noise(qubit.rho)
 
-        if (i+1) % (10 * len(dd_sequence)) == 0:
+        if (i+1) % (4 * len(dd_sequence)) == 0:
             current_time = ((actual_tau/2) + ((i+1)*actual_tau)) 
             sampled_times.append(current_time)
             sampled_rho01.append(complex(qubit.rho[0, 1]))
