@@ -14,7 +14,7 @@ DT = 1e-5
 # --- DD Sequence ---
 PI   = np.pi
 CPMG_Y = [('Y', 1),('Y', 1)]
-CPMG_X = [('Y', 1),('Y', 1)]
+CPMG_X = [('X', 1),('X', 1)]
 CUSTOM = [('X', 1),('X', 1),('X', 1),('Y', 1)]
 XY4  = [('X', 1), ('Y', 1), ('X', 1), ('Y', 1)]
 XY8  = [('X', 1), ('Y', 1), ('X', 1), ('Y', 1), ('Y', 1), ('X', 1), ('Y', 1), ('X', 1)]
@@ -23,7 +23,7 @@ DD_SEQUENCE = CPMG_Y
 
 # --- Config ---
 TEMPERATURE_K = 77.0
-N_REPEATS     = 12
+N_REPEATS     = 30
 
 
 TAUS = [20e-6 , 30e-6 , 40e-6, 50e-6 , 60e-6 , 70e-6]
@@ -33,8 +33,8 @@ COHERENCE_THRESHOLD = np.exp(-1)
 
 def Dynamic_Decoupling(n_pulses: int, tau: float, dd_sequence):
     # Init Qubit & Noise
-    qubit = Qubit(rho= np.array([[0.5, 0.5],
-                                   [0.5, 0.5]], dtype=np.complex128),
+    qubit = Qubit(rho= np.array([[0.5, 0.5 * np.exp(-1j * np.pi / 4)],
+                                   [0.5 * np.exp( 1j * np.pi / 4), 0.5]], dtype=np.complex128),
                                    dt=DT,
                                    temperature_Kelvin=TEMPERATURE_K)
     noise = Noise(dt=DT)
@@ -215,7 +215,7 @@ def Sweep_Tau_T2_DD(taus, dd_sequence, n_jobs=-1, best_by="env", max_total_time=
 import time
 
 def main():
-    dd_sequence = XY4
+    dd_sequence = CPMG_X8
     taus = TAUS
 
     start = time.perf_counter()
