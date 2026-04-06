@@ -4,6 +4,7 @@ class Noise:
     dt                              : float                             # Time step in simulation
     rng                             : np.random.Generator
 
+    xy_axis_division                : float
     ou_slow_tau_c                   : float
     ou_slow_delta_omega_rms         : float
     ou_slow_delta_omega             : float
@@ -51,14 +52,6 @@ class Noise:
     TECH_TIME_FRAC_SIGMA_BASE        = 5e-4
     TECH_PHASE_SIGMA_BASE            = 2e-4
 
-    PAULI_X = np.array([[0.0, 1.0],
-                        [1.0, 0.0]], dtype=np.complex128)
-    PAULI_Y = np.array([[0.0, -1j],
-                        [1j, 0.0]], dtype=np.complex128)
-    PAULI_Z = np.array([[1.0, 0.0],
-                        [0.0, -1.0]], dtype=np.complex128)
-    IDENTITY = np.eye(2, dtype=np.complex128)
-
     # Avoid Unnecessary Compute helpers
     ou_slow_decay_factor      : float
     ou_slow_random_term_scale : float
@@ -70,6 +63,8 @@ class Noise:
     def __init__(self, dt: float = 1e-5):
         self.dt = dt
         self.rng = np.random.default_rng()
+
+        self.xy_axis_division = self.rng.uniform(0.1, 0.9)
 
         self.ou_slow_tau_c           = self.OU_SLOW_TAU_C_BASE * self.rng.uniform(0.2, 5.0)
         self.ou_slow_delta_omega_rms = self.OU_SLOW_DELTA_OMEGA_RMS_BASE * self.rng.uniform(0.5, 2.0)
@@ -242,9 +237,16 @@ class Noise:
 
         phi = phi_ou_slow + phi_ou_fast + phi_rtn + phi_qs + phi_white + phi_one_over_f
 
-        U = np.array([[np.exp(-1j * phi / 2.0), 0.0],
-                      [0.0, np.exp(+1j * phi / 2.0)]], dtype=np.complex128)
-        
-        rho = U @ rho @ U.conj().T
+
+        phi_x = phi * self.xy_axis_division
+        phi_y = phi * (1.0 - self.xy_axis_division)
+
+        U_x = np.array([[np.cos(phi_x / 2.0), -1j * np.sin(phi_x / 2.0)],
+                        [-1j * np.sin(phi_x / 2.0), np.cos(phi_x / 2.0)]], dtype=np.complex128)
+
+        U_y = np.array([[np.cos(phi_y / 2.0), -np.sin(phi_y / 2.0)],
+                        [np.sin(phi_y / 2.0),  np.cos(phi_y / 2.0)]], dtype=np.complex128)
+
+        rho = U_x @ U_y @ rho @ U_y.conj().T @ U_x.conj().T
 
         return rho
