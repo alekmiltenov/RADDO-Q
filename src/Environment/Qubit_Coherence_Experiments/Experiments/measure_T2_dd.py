@@ -13,15 +13,17 @@ from noise import Noise
 DT = 1e-5
 # --- DD Sequence ---
 PI   = np.pi
-CPMG = [('Y', 1),('Y', 1)]
+CPMG_Y = [('Y', 1),('Y', 1)]
+CPMG_X = [('Y', 1),('Y', 1)]
+CUSTOM = [('X', 1),('X', 1),('X', 1),('Y', 1)]
 XY4  = [('X', 1), ('Y', 1), ('X', 1), ('Y', 1)]
 XY8  = [('X', 1), ('Y', 1), ('X', 1), ('Y', 1), ('Y', 1), ('X', 1), ('Y', 1), ('X', 1)]
 
-DD_SEQUENCE = CPMG
+DD_SEQUENCE = CPMG_Y
 
 # --- Config ---
 TEMPERATURE_K = 77.0
-N_REPEATS     = 40
+N_REPEATS     = 12
 
 
 TAUS = [20e-6 , 30e-6 , 40e-6, 50e-6 , 60e-6 , 70e-6]
@@ -158,7 +160,7 @@ def extract_T2_DD(times, coherences):
 
     return t2_raw, t2_env, t2_fit
 
-def Sweep_Tau_T2_DD(taus, dd_sequence, n_jobs=-1, best_by="env", max_total_time=0.100):
+def Sweep_Tau_T2_DD(taus, dd_sequence, n_jobs=-1, best_by="env", max_total_time=0.1):
     def one_tau(tau):
         dt_in_tau = max(1, int(round(tau / DT)))
         actual_tau = dt_in_tau * DT
@@ -213,7 +215,7 @@ def Sweep_Tau_T2_DD(taus, dd_sequence, n_jobs=-1, best_by="env", max_total_time=
 import time
 
 def main():
-    dd_sequence = CPMG
+    dd_sequence = XY4
     taus = TAUS
 
     start = time.perf_counter()

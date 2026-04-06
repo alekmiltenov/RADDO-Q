@@ -57,7 +57,7 @@ class Noise:
     ou_slow_random_term_scale : float
     ou_fast_decay_factor      : float
     ou_fast_random_term_scale : float
-    rtn_P_switch              : float                                   # 0.5 * (1 - exp(- 2.0 * rtn_lambda * dt))
+    rtn_P_switch              : float                                  
 
 
     def __init__(self, dt: float = 1e-5):
@@ -237,16 +237,23 @@ class Noise:
 
         phi = phi_ou_slow + phi_ou_fast + phi_rtn + phi_qs + phi_white + phi_one_over_f
 
+        phi_x = phi * 0.50
+        phi_y = phi * 0.50
 
-        phi_x = phi * self.xy_axis_division
-        phi_y = phi * (1.0 - self.xy_axis_division)
+        phi_xy = np.sqrt(phi_x**2 + phi_y**2)
+        if phi_xy == 0.0:
+            return rho
 
-        U_x = np.array([[np.cos(phi_x / 2.0), -1j * np.sin(phi_x / 2.0)],
-                        [-1j * np.sin(phi_x / 2.0), np.cos(phi_x / 2.0)]], dtype=np.complex128)
+        nx = phi_x / phi_xy
+        ny = phi_y / phi_xy
 
-        U_y = np.array([[np.cos(phi_y / 2.0), -np.sin(phi_y / 2.0)],
-                        [np.sin(phi_y / 2.0),  np.cos(phi_y / 2.0)]], dtype=np.complex128)
+        cos_h = np.cos(phi_xy / 2.0)
+        sin_h = np.sin(phi_xy / 2.0)
 
-        rho = U_x @ U_y @ rho @ U_y.conj().T @ U_x.conj().T
+        U = np.array([
+            [cos_h,                 (-1j * nx - ny) * sin_h],
+            [(-1j * nx + ny) * sin_h,  cos_h]
+        ], dtype=np.complex128)
 
+        rho = U @ rho @ U.conj().T
         return rho

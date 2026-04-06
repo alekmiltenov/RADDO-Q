@@ -11,13 +11,16 @@ from eval_BSG import Sweep_Tau_T2_DD, _to_dd_sequence
 
 
 TAU_VALUES_DEFAULT = [20e-6, 30e-6, 40e-6, 50e-6, 60e-6]
-ALLOWED_LENGTHS = [4, 8, 10, 16, 32]
+ALLOWED_LENGTHS = [4, 8, 16, 32]
 
 
 BASELINE_DD_SEQUENCES = {
-    "CPMG": [("Y", 1)],
+    "CPMG-Y": [("Y", 1)],
+    "CPMG-X": [("X", 1)],
     "XY4": [("X", 1), ("Y", 1), ("X", 1), ("Y", 1)],
     "XY8": [("X", 1), ("Y", 1), ("X", 1), ("Y", 1), ("Y", 1), ("X", 1), ("Y", 1), ("X", 1)],
+    "Custom - 3X 1Y": [("X", 1), ("X", 1), ("X", 1), ("Y", 1), ("X", 1), ("X", 1), ("X", 1), ("Y", 1)],
+    "Custom - 3Y 1X": [("Y", 1), ("Y", 1), ("Y", 1), ("X", 1), ("Y", 1), ("Y", 1), ("Y", 1), ("X", 1)],
 }
 
 ACTION_TO_TOKEN = {
