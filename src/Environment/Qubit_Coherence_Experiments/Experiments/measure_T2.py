@@ -29,19 +29,19 @@ def hahn_echo_signal(tau: float) -> float:
         qubit = Qubit(rho=q_init(), dt=DT, temperature_Kelvin=TEMPERATURE_K)
         noise = Noise(dt=DT)
 
-        qubit.rho = q_Rx(np.pi / 2, qubit.rho, noise)
+        qubit.rho = q_Rx(np.pi / 2, qubit.rho)
 
         for _ in range(half_steps):
             # qubit.GAD()
             qubit.rho = noise.apply_noise(qubit.rho)
 
-        qubit.rho = q_Rx(np.pi, qubit.rho, noise)
+        qubit.rho = q_Rx(np.pi, qubit.rho)
 
         for _ in range(half_steps):
             # qubit.GAD()
             qubit.rho = noise.apply_noise(qubit.rho)
 
-        qubit.rho = q_Rx(np.pi / 2, qubit.rho, noise)
+        qubit.rho = q_Rx(np.pi / 2, qubit.rho)
 
         # Measure |1> state after final pi/2
         population_repeat_same_tau.append(float(np.real(qubit.rho[0, 0])))

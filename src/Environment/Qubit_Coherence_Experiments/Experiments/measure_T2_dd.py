@@ -21,7 +21,7 @@ DD_SEQUENCE = CPMG
 
 # --- Config ---
 TEMPERATURE_K = 77.0
-N_REPEATS     = 12
+N_REPEATS     = 10
 
 
 TAUS = [20e-6 , 30e-6 , 40e-6, 50e-6 , 60e-6 , 70e-6]
@@ -53,8 +53,8 @@ def Dynamic_Decoupling(n_pulses: int, tau: float, dd_sequence):
         
         # PI pulse
         axis, angle = dd_sequence[i % len(dd_sequence)]
-        if axis == 'X': qubit.rho = q_Rx((np.pi)/angle, qubit.rho, noise)
-        elif axis == 'Y': qubit.rho = q_Ry((np.pi)/angle, qubit.rho, noise)
+        if axis == 'X': qubit.rho = q_Rx((np.pi)/angle, qubit.rho)
+        elif axis == 'Y': qubit.rho = q_Ry((np.pi)/angle, qubit.rho)
         
         
 
