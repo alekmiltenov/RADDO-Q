@@ -40,14 +40,14 @@ class Noise:
     RTN_SWITCHING_RATE_BASE          = 770.0
     RTN_NU_BASE                      = 6e2
     QS_DELTA_OMEGA_BASE              = 3e3
-    WHITE_GAMMA_PHI_BASE             = 50
+    WHITE_GAMMA_PHI_BASE             = 20
     ONE_OVER_F_NUM_FLUCTUATORS       = 8
     ONE_OVER_F_LAMBDA_MIN            = 1e-1
     ONE_OVER_F_LAMBDA_MAX            = 12e2
     ONE_OVER_F_TOTAL_NU_BASE         = 2.1e2
 
     TECH_T_PI_BASE                   = 100e-9
-    TECH_STATIC_DETUNING_SIGMA_BASE  = 2.0 * np.pi * 8e2
+    TECH_STATIC_DETUNING_SIGMA_BASE  = 2.0 * np.pi * 3e2
     TECH_AMP_FRAC_SIGMA_BASE         = 1.1e-3
     TECH_TIME_FRAC_SIGMA_BASE        = 5e-4
     TECH_PHASE_SIGMA_BASE            = 2e-4
@@ -237,8 +237,8 @@ class Noise:
 
         phi = phi_ou_slow + phi_ou_fast + phi_rtn + phi_qs + phi_white + phi_one_over_f
 
-        phi_x = phi * 0.50
-        phi_y = phi * 0.50
+        phi_x = phi * 0.25
+        phi_y = phi * 0.75
 
         phi_xy = np.sqrt(phi_x**2 + phi_y**2)
         if phi_xy == 0.0:

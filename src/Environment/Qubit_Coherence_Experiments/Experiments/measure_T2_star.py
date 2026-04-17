@@ -13,9 +13,9 @@ from noise import Noise
 # Config
 DT            = 1e-6                                            # Lower timestep because dt should be << T2*
 TEMPERATURE_K = 77.0                                            # Tempearture in kelvin
-N_REPEATS     = 2000                                            # repeat N_REPEATS times for smoother curve
+N_REPEATS     = 1000                                            # repeat N_REPEATS times for smoother curve
 
-tau_values = np.linspace(0, 1e-4, 1000)                         # initial tau values
+tau_values = np.linspace(0, 3e-4, 400)                         # initial tau values
 tau_steps = np.unique(np.round(tau_values / DT).astype(int))    # filter unique step numbers
 TAUS = tau_steps * DT                                           # final filtered tau values
 
@@ -105,7 +105,7 @@ ax.set_ylabel("⟨ρ₁₁⟩")
 ax.set_title("Ramsey T2* decay 77K")
 ax.set_ylim(0.0, 1.0)
 ax.set_xlim(taus_us[0], taus_us[-1])
-ax.set_xticks(np.arange(0, taus_us[-1] + 1, 10))
+ax.set_xticks(np.arange(0, taus_us[-1] + 1, 100))
 ax.grid(True, alpha=0.3)
 
 if np.isfinite(T2_star):

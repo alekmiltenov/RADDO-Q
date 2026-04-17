@@ -10,7 +10,7 @@ from environment_BSG import SequenceGeneratorEnv
 from eval_BSG import Sweep_Tau_T2_DD, _to_dd_sequence
 
 
-TAU_VALUES_DEFAULT = [20e-6, 30e-6, 40e-6, 50e-6, 60e-6]
+TAU_VALUES_DEFAULT = [20e-6, 30e-6, 40e-6]
 ALLOWED_LENGTHS = [4, 8, 16, 32]
 
 
