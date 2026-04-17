@@ -15,13 +15,10 @@ os.makedirs(LOG_DIR, exist_ok=True)
 os.makedirs(MODEL_DIR, exist_ok=True)
 
 
-# ----------------------------
+
 # Training config
-# ----------------------------
 TAU_VALUES = [20e-6, 30e-6, 40e-6, 50e-6]
 
-# "dummy" -> easiest for debugging
-# "subproc" -> correct choice for real training when N_ENVS > 1
 VEC_ENV_TYPE = "dummy"
 
 N_ENVS = 1

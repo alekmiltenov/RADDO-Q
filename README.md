@@ -65,7 +65,7 @@ The environment includes multiple interacting noise sources:
   - Timing jitter
   - Phase noise
 
-This creates a highly stochastic and realistic simulation environment.
+This creates a highly stochastic and realistic simulation environment, so the agent can learn more general patterns.
 
 ---
 

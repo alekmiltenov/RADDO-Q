@@ -36,7 +36,6 @@ def evaluate_sequence(sequence, tau_values):
         best_by="env",
     )
 
-    # If nothing crossed threshold / fit failed
     if np.isnan(best_t2):
         return 0.0
 
